@@ -1,4 +1,4 @@
-"""Page de monitoring et alertes."""
+""""""Page de monitoring et alertes."""
 
 import streamlit as st
 import pandas as pd
@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 
 from utils.data_loader import load_data
 from utils.indicators import TechnicalIndicators
-from utils.signal.signal_engine import SignalEngine
+from signal.signal_engine import SignalEngine
 from config import POPULAR_SYMBOLS
 
 
@@ -179,6 +179,29 @@ else:
                         "Change 1Y",
                         f"{change_pct:+.2f}%"
                     )
+                                    signal_result = SignalEngine.generate_signal(df)
+
+                st.divider()
+
+                st.subheader("📡 Signal IA")
+
+                col_signal, col_score = st.columns(2)
+
+                with col_signal:
+                    st.metric(
+                        "Direction",
+                        f"{signal_result['emoji']} {signal_result['signal']}"
+                    )
+
+                with col_score:
+                    st.metric(
+                        "Conviction",
+                        f"{signal_result['conviction']:.1f}/100"
+                    )
+
+                with st.expander("📄 Analyse du signal"):
+                    for comment in signal_result["comments"]:
+                        st.write("•", comment)
 
 
                 # ==========================
