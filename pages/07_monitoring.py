@@ -106,14 +106,25 @@ if not all(col in df.columns for col in required_cols):
 df = df.dropna(subset=required_cols)
 
 # Ensuite seulement le graphique
-fig.add_trace(go.Candlestick(
-    x=df.index.tolist(),
-    open=df['Open'].tolist(),
-    high=df['High'].tolist(),
-    low=df['Low'].tolist(),
-    close=df['Close'].tolist(),
-    name='OHLC'
-))
-))
-                fig.update_layout(template="plotly_dark", height=300)
+                # Protection avant création du graphique
+                if df.empty:
+                    st.warning("Pas assez de données pour afficher le graphique")
+                    st.stop()
+
+                required_cols = ['Open', 'High', 'Low', 'Close']
+
+                if not all(col in df.columns for col in required_cols):
+                    st.error("Données OHLC incomplètes")
+                    st.stop()
+
+                df = df.dropna(subset=required_cols)
+
+                fig.add_trace(go.Candlestick(
+                    x=df.index.tolist(),
+                    open=df['Open'].tolist(),
+                    high=df['High'].tolist(),
+                    low=df['Low'].tolist(),
+                    close=df['Close'].tolist(),
+                    name='OHLC'
+                ))                fig.update_layout(template="plotly_dark", height=300)
                 st.plotly_chart(fig, use_container_width=True)
