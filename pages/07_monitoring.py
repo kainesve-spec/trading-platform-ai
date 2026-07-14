@@ -1,4 +1,4 @@
-""""""Page de monitoring et alertes."""
+"""Page de monitoring et alertes."""
 
 import streamlit as st
 import pandas as pd
@@ -39,13 +39,16 @@ with st.sidebar:
 
 
 if not symbols:
+
     st.info("👈 Sélectionnez au moins un symbole")
+
 
 else:
 
     st.subheader("📈 Watchlist")
 
     watchlist_data = []
+
 
     for symbol in symbols:
 
@@ -57,6 +60,7 @@ else:
                 interval="1d"
             )
 
+
             if df is not None and not df.empty:
 
                 latest_price = df["close"].iloc[-1]
@@ -67,6 +71,7 @@ else:
                     else latest_price
                 )
 
+
                 change_pct = (
                     (latest_price - prev_price)
                     / prev_price
@@ -75,17 +80,15 @@ else:
                     else 0
                 )
 
+
                 volume = df["volume"].iloc[-1]
 
 
                 watchlist_data.append({
 
                     "Symbole": symbol,
-
                     "Prix": f"${latest_price:.2f}",
-
                     "Changement": f"{change_pct:+.2f}%",
-
                     "Volume": f"{volume/1e6:.1f}M"
 
                 })
@@ -107,7 +110,6 @@ else:
 
 
     st.divider()
-
 
     st.subheader("📈 Détails")
 
@@ -179,29 +181,6 @@ else:
                         "Change 1Y",
                         f"{change_pct:+.2f}%"
                     )
-                                    signal_result = SignalEngine.generate_signal(df)
-
-                st.divider()
-
-                st.subheader("📡 Signal IA")
-
-                col_signal, col_score = st.columns(2)
-
-                with col_signal:
-                    st.metric(
-                        "Direction",
-                        f"{signal_result['emoji']} {signal_result['signal']}"
-                    )
-
-                with col_score:
-                    st.metric(
-                        "Conviction",
-                        f"{signal_result['conviction']:.1f}/100"
-                    )
-
-                with st.expander("📄 Analyse du signal"):
-                    for comment in signal_result["comments"]:
-                        st.write("•", comment)
 
 
                 # ==========================
@@ -253,20 +232,16 @@ else:
 
 
                 required_cols = [
-
                     "open",
                     "high",
                     "low",
                     "close"
-
                 ]
 
 
                 if not all(col in df.columns for col in required_cols):
 
-                    st.warning(
-                        "Données OHLC incomplètes"
-                    )
+                    st.warning("Données OHLC incomplètes")
 
                     continue
 
@@ -323,4 +298,4 @@ else:
 
                     use_container_width=True
 
-                )
+            )
