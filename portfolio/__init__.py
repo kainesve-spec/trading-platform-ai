@@ -1,0 +1,1 @@
+"""Portfolio pour la plateforme."""

@@ -1,0 +1,1 @@
+"""Signaux pour la plateforme."""

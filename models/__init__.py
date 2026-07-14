@@ -1,0 +1,1 @@
+"""Modèles pour la plateforme."""
