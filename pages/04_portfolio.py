@@ -44,7 +44,7 @@ with st.sidebar:
         st.subheader("Fermer Position")
         open_pos = [p for p in portfolio.positions if p['status'] == 'OPEN']
         if open_pos:
-            pos_list = [f"{p['symbol']} x{p['quantity']}"] for p in open_pos]
+            pos_list = [f"{p['symbol']} x{p['quantity']}" for p in open_pos]
             selected = st.selectbox("Position", pos_list)
             exit_price = st.number_input("Prix de sortie", min_value=0.01, value=150.0)
             
