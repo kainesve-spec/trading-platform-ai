@@ -27,7 +27,13 @@ with col1:
     min_value=100.0,
     step=100.0
     )
-    risk_percent = st.slider("Risque (%)", 0.1, 10.0, DEFAULT_RISK_PERCENT, 0.1)
+    risk_percent = st.slider(
+    "Risque (%)",
+    min_value=0.1,
+    max_value=10.0,
+    value=float(DEFAULT_RISK_PERCENT),
+    step=0.1
+    )
     entry_price = st.number_input("Prix d'entrée", value=150.0, min_value=0.01)
     stop_loss = st.number_input("Stop Loss", value=140.0, min_value=0.01)
     
