@@ -21,8 +21,12 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("📊 Calculateur de Position Size")
-    
-    capital = st.number_input("Capital", value=DEFAULT_CAPITAL, min_value=100.0)
+    capital = st.number_input(
+    "Capital",
+    value=float(DEFAULT_CAPITAL),
+    min_value=100.0,
+    step=100.0
+    )
     risk_percent = st.slider("Risque (%)", 0.1, 10.0, DEFAULT_RISK_PERCENT, 0.1)
     entry_price = st.number_input("Prix d'entrée", value=150.0, min_value=0.01)
     stop_loss = st.number_input("Stop Loss", value=140.0, min_value=0.01)
