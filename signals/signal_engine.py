@@ -140,21 +140,30 @@ class SignalEngine:
 
                 "analysis": {
 
-                    "technical":
-                        technical["comment"],
+                     "technical":
+                         technical["comment"],
 
-                    "ai":
-                        ai["comment"],
+                     "ai":
+                         ai["comment"],
 
-                    "trend":
-                        trend["comment"],
+                     "trend":
+                         trend["comment"],
 
-                    "risk":
-                        risk["comment"]
+                     "risk":
+                         risk["comment"]
 
-                }
+                  },
 
-            }
+                  "comments": [
+                     technical["comment"],
+                     ai["comment"],
+                     trend["comment"],
+                     risk["comment"]
+                  ]
+
+                  }
+
+
 
 
         except Exception as e:
