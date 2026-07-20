@@ -138,29 +138,7 @@ class SignalEngine:
                     "risk": risk["comment"]
                 },
 
-                "comments": [
-                    technical["comment"],
-                    ai["comment"],
-                    trend["comment"],
-                    risk["comment"]
-                ]
-
-            }
-
-                "comments": [
-
-                    technical["comment"],
-
-                    ai["comment"],
-
-                    trend["comment"],
-
-                    risk["comment"]
-
-                ]
-
-            }
-
+               
                   "comments": [
                      technical["comment"],
                      ai["comment"],
