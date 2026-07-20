@@ -216,7 +216,7 @@ else:
 
                 with st.expander("📄 Analyse du signal"):
 
-                    for comment in signal_result["comments"]:
+                    for comment in signal_result.get("comments", []):
 
                         st.write(
                             "•",
