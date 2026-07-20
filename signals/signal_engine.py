@@ -52,7 +52,6 @@ elif "HAUSSE" in ai_comments and trend_score <= 0.2:
 
 # Le score reste entre 0 et 100
 total_score = max(0, min(100, total_score))
-            total_score = max(0, min(100, total_score))
             
             # Déterminer le signal V2.1
 if total_score >= 80:
