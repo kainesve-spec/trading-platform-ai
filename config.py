@@ -104,9 +104,34 @@ NOTIFICATION_SOUND = True
 
 # Symboles populaires
 POPULAR_SYMBOLS = [
+    # 📈 Actions US majeures
     "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
-    "TSLA", "META", "NFLX", "PYPL", "UBER",
-    "SPY", "QQQ", "IWM", "VTI", "BRK.B"
+    "TSLA", "META", "NFLX", "AMD", "INTC",
+    "AVGO", "ADBE", "CRM", "ORCL", "CSCO",
+    "QCOM", "IBM", "UBER", "PYPL", "JPM",
+    "BAC", "V", "MA", "WMT", "COST",
+    "KO", "PEP", "MCD", "NKE",
+
+    # 🏦 ETF / Indices populaires
+    "SPY", "QQQ", "IWM", "DIA", "VTI",
+    "VOO", "ARKK", "GLD", "SLV",
+    
+    # 🪙 Cryptomonnaies majeures (Yahoo Finance)
+    "BTC-USD", "ETH-USD", "BNB-USD",
+    "SOL-USD", "XRP-USD", "ADA-USD",
+    "DOGE-USD", "AVAX-USD", "DOT-USD",
+    "LINK-USD", "LTC-USD", "TRX-USD",
+
+    # 🌍 Grandes entreprises internationales
+    "BABA", "TSM", "NVO", "ASML",
+    "SONY", "TM",
+
+    # 🏢 Valeurs financières / énergie
+    "BRK.B", "GS", "MS",
+    "XOM", "CVX", "COP",
+
+    # 🚗 Automobile / innovation
+    "RIVN", "LCID"
 ]
 
 # Timeframes disponibles
