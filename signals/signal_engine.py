@@ -60,7 +60,13 @@ class SignalEngine:
         Returns:
             dictionnaire signal complet
         """
+        # Normalisation des colonnes OHLC
+        df = df.copy()
 
+        df.columns = [
+            str(col).capitalize()
+            for col in df.columns
+        ]
         if df is None or df.empty:
             return SignalEngine._empty_signal()
 
