@@ -220,22 +220,25 @@ else:
             pct_change = close.pct_change(20).iloc[-1] * 100 if len(close) >= 20 else 0
             
             score = 0.5
-            
             if pct_change > 5:
-                score = 0.8
-                comment = f"Forte hausse (+{pct_change:.1f}%)"
-            elif pct_change > 1:
-                score = 0.6
-                comment = f"Hausse modérée (+{pct_change:.1f}%)"
-            elif pct_change < -5:
-                score = 0.2
-                comment = f"Forte baisse ({pct_change:.1f}%)"
-            elif pct_change < -1:
-                score = 0.4
-                comment = f"Baisse modérée ({pct_change:.1f}%)"
-            else:
-                score = 0.5
-                comment = "Tendance plate"
+    score = 1.0
+    comment = f"Forte hausse (+{pct_change:.1f}%)"
+
+elif pct_change > 1:
+    score = 0.7
+    comment = f"Hausse modérée (+{pct_change:.1f}%)"
+
+elif pct_change < -5:
+    score = 0.0
+    comment = f"Forte baisse ({pct_change:.1f}%)"
+
+elif pct_change < -1:
+    score = 0.3
+    comment = f"Baisse modérée ({pct_change:.1f}%)"
+
+else:
+    score = 0.5
+    comment = "Tendance plate"
             
             return score, comment
             
