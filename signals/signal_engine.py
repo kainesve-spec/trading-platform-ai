@@ -63,10 +63,14 @@ class SignalEngine:
         # Normalisation des colonnes OHLC
         df = df.copy()
 
-        df.columns = [
+        signal_df = df.copy()
+
+        signal_df.columns = [
             str(col).capitalize()
-            for col in df.columns
+            for col in signal_df.columns
         ]
+
+        df = signal_df
         if df is None or df.empty:
             return SignalEngine._empty_signal()
 
