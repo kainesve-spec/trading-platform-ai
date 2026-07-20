@@ -48,7 +48,7 @@ if "BAISSE" in ai_comments and trend_score >= 0.8:
 
 # Si l'IA annonce une HAUSSE alors que la tendance est fortement baissière
 elif "HAUSSE" in ai_comments and trend_score <= 0.2:
-    total_score -= 10
+    total_score -= 15
 
 # Le score reste entre 0 et 100
 total_score = max(0, min(100, total_score))
