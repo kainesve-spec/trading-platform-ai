@@ -44,7 +44,7 @@ class SignalEngine:
 
 # Si l'IA annonce une BAISSE alors que la tendance est fortement haussière
 if "BAISSE" in ai_comments and trend_score >= 0.8:
-    total_score -= 10
+    total_score -= 15
 
 # Si l'IA annonce une HAUSSE alors que la tendance est fortement baissière
 elif "HAUSSE" in ai_comments and trend_score <= 0.2:
