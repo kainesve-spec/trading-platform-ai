@@ -124,45 +124,47 @@ class SignalEngine:
 
                 "conviction": conviction,
 
-                "technical_score":
-                    technical["score"],
+                "technical_score": technical["score"],
 
-                "ai_score":
-                    ai["score"],
+                "ai_score": ai["score"],
 
-                "trend_score":
-                    trend["score"],
+                "trend_score": trend["score"],
 
-                "risk_score":
-                    risk["score"],
+                "risk_score": risk["score"],
 
-                "entry_price":
-                    last_price,
+                "entry_price": last_price,
 
-                "stop_loss":
-                    risk["stop_loss"],
+                "stop_loss": risk["stop_loss"],
 
-                "take_profit":
-                    risk["take_profit"],
+                "take_profit": risk["take_profit"],
 
-                "rr_ratio":
-                    risk["rr_ratio"],
+                "rr_ratio": risk["rr_ratio"],
 
-                "analysis": {},
+                "analysis": {
 
-                     "technical":
-                         technical["comment"],
+                    "technical": technical["comment"],
 
-                     "ai":
-                         ai["comment"],
+                    "ai": ai["comment"],
 
-                     "trend":
-                         trend["comment"],
+                    "trend": trend["comment"],
 
-                     "risk":
-                         risk["comment"]
+                    "risk": risk["comment"]
 
-                  },
+                },
+
+                "comments": [
+
+                    technical["comment"],
+
+                    ai["comment"],
+
+                    trend["comment"],
+
+                    risk["comment"]
+
+                ]
+
+            }
 
                   "comments": [
                      technical["comment"],
