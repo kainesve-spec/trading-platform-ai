@@ -148,7 +148,7 @@ class SignalEngine:
                 "rr_ratio":
                     risk["rr_ratio"],
 
-                "analysis": {
+                "analysis": {},
 
                      "technical":
                          technical["comment"],
