@@ -41,16 +41,22 @@ class SignalEngine:
             
             total_score = max(0, min(100, total_score))
             
-            # Déterminer le signal
-            if total_score > 65:
-                signal = "BUY"
-                emoji = "🔼"
-            elif total_score < 35:
-                signal = "SELL"
-                emoji = "🔽"
-            else:
-                signal = "WAIT"
-                emoji = "⏸️"
+            # Déterminer le signal V2.1
+if total_score >= 65:
+    signal = "BUY"
+    emoji = "🟢"
+    
+elif total_score <= 35:
+    signal = "SELL"
+    emoji = "🔴"
+
+elif 45 <= total_score < 65:
+    signal = "BUY & SELL"
+    emoji = "🟡"
+
+else:
+    signal = "WAIT"
+    emoji = "⏸️"
             
             comments = [
                 f"Analyse technique: {tech_comments}",
@@ -60,10 +66,22 @@ class SignalEngine:
             ]
             
             return {
-                "signal": signal,
-                "emoji": emoji,
-                "conviction": total_score,
-                "tech_score": tech_score * 40,
+    "signal": signal,
+    "emoji": emoji,
+    "conviction": total_score,
+
+    "market_state": signal,
+    "risk_level": (
+        "LOW" if total_score >= 75 or total_score <= 25
+        else "MEDIUM"
+    ),
+    "decision": (
+        "Signal confirmé"
+        if signal in ["BUY", "SELL"]
+        else "Marché incertain"
+    ),
+
+    "tech_score": tech_score * 40,
                 "ai_score": ai_score * 30,
                 "trend_score": trend_score * 20,
                 "rr_score": rr_score * 10,
