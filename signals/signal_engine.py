@@ -38,7 +38,20 @@ class SignalEngine:
                 trend_score * SIGNAL_WEIGHTS["trend_strength"] * 100 +
                 rr_score * SIGNAL_WEIGHTS["risk_reward"] * 100
             )
-            
+            # =====================================================
+# Vérification de cohérence IA / Tendance
+# =====================================================
+
+# Si l'IA annonce une BAISSE alors que la tendance est fortement haussière
+if "BAISSE" in ai_comments and trend_score >= 0.8:
+    total_score -= 10
+
+# Si l'IA annonce une HAUSSE alors que la tendance est fortement baissière
+elif "HAUSSE" in ai_comments and trend_score <= 0.2:
+    total_score -= 10
+
+# Le score reste entre 0 et 100
+total_score = max(0, min(100, total_score))
             total_score = max(0, min(100, total_score))
             
             # Déterminer le signal V2.1
