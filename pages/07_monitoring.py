@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 
 from utils.data_loader import load_data
 from utils.indicators import TechnicalIndicators
-from utils.signal.signal_engine import SignalEngine
+from signal.signal_engine import SignalEngine
 from config import POPULAR_SYMBOLS
 
 
