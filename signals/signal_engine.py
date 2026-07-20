@@ -190,7 +190,14 @@ else:
             confidence = ai_prediction.get("average_confidence", 50)
             
             # Score basé sur la confiance
-            score = confidence / 100
+            if direction == "HAUSSE":
+    score = confidence / 100
+
+elif direction == "BAISSE":
+    score = 1 - (confidence / 100)
+
+else:
+    score = 0.5
             
             comment = f"{direction} ({confidence:.0f}% confiance)"
             
