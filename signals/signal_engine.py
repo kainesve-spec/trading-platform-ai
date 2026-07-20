@@ -96,6 +96,16 @@ class SignalEngine:
             )
 
 
+            # Bonus / pénalité de cohérence IA + Tendance
+
+             coherence_bonus = SignalEngine.check_coherence(
+                ai,
+                trend
+            )
+
+            total_score += coherence_bonus
+
+
             conviction = int(
                 np.clip(total_score, 0, 100)
             )
@@ -140,11 +150,12 @@ class SignalEngine:
 
                
                   "comments": [
-                     technical["comment"],
-                     ai["comment"],
-                     trend["comment"],
-                     risk["comment"]
-                  ]
+                      technical["comment"],
+                      ai["comment"],
+                      trend["comment"],
+                      risk["comment"],
+                      f"Cohérence IA/Tendance : {coherence_bonus:+d}"
+]
 
                   }
 
@@ -504,7 +515,59 @@ class SignalEngine:
             }
 
 
+   @staticmethod
+    def check_coherence(
+        ai: Dict[str, Any],
+        trend: Dict[str, Any]
+    ) -> int:
+        """
+        Vérifie la cohérence IA / Tendance.
 
+        Retour :
+        +10 = IA et tendance alignées
+        -10 = conflit IA / tendance
+         0 = neutre
+        """
+
+        ai_score = ai.get(
+            "score",
+            15
+        )
+
+        trend_score = trend.get(
+            "score",
+            10
+        )
+
+
+        # IA haussière + tendance haussière
+
+        if ai_score >= 20 and trend_score >= 15:
+
+            return 10
+
+
+        # IA baissière + tendance baissière
+
+        if ai_score <= 10 and trend_score <= 8:
+
+            return 10
+
+
+        # Conflit IA / tendance
+
+        if (
+            ai_score >= 20
+            and trend_score <= 8
+        ) or (
+            ai_score <= 10
+            and trend_score >= 15
+        ):
+
+            return -10
+
+
+        return 0 
     @staticmethod
     def _classify_signal(
         conviction,
