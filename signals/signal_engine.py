@@ -55,21 +55,25 @@ total_score = max(0, min(100, total_score))
             total_score = max(0, min(100, total_score))
             
             # Déterminer le signal V2.1
-if total_score >= 65:
+if total_score >= 80:
+    signal = "STRONG BUY"
+    emoji = "🚀"
+
+elif total_score >= 65:
     signal = "BUY"
     emoji = "🟢"
-    
-elif total_score <= 35:
-    signal = "SELL"
-    emoji = "🔴"
 
-elif 45 <= total_score < 65:
+elif total_score >= 45:
     signal = "BUY & SELL"
     emoji = "🟡"
 
+elif total_score >= 25:
+    signal = "SELL"
+    emoji = "🔴"
+
 else:
-    signal = "WAIT"
-    emoji = "⏸️"
+    signal = "STRONG SELL"
+    emoji = "💥"
             
             comments = [
                 f"Analyse technique: {tech_comments}",
