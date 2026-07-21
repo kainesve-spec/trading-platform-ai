@@ -291,78 +291,223 @@ class SignalEngine:
     # ANALYSE TENDANCE
     # ==========================================================
 
-    def analyze_trend(
-        self,
-        df: pd.DataFrame
-    ) -> Dict:
+    
+def analyze_trend(
+    self,
+    df: pd.DataFrame
+) -> Dict:
+    """
+    Analyse tendance robuste V2.
 
-        score = 0
+    Sources utilisées :
+    - Position du prix par rapport aux SMA/EMA
+    - Croisement EMA/SMA
+    - MACD
+    - ADX
 
-        try:
+    Score maximum : 20 points
+    """
 
-            close = df["Close"].iloc[-1]
+    score = 0
+    comments = []
 
-            sma = None
-            ema = None
+    try:
 
-            if "SMA" in df.columns:
-                sma = df["SMA"].iloc[-1]
-
-            if "EMA" in df.columns:
-                ema = df["EMA"].iloc[-1]
-
-
-            if sma is not None:
-
-                if close > sma:
-                    score += 10
-
-
-            if ema is not None:
-
-                if close > ema:
-                    score += 10
+        if df.empty or "Close" not in df.columns:
+            return {
+                "score": 0,
+                "comment": "Données insuffisantes pour analyser la tendance"
+            }
 
 
-            score = max(0, min(20, score))
+        close = float(
+            df["Close"].iloc[-1]
+        )
 
-            if score >= 15:
 
-                comment = (
-                    "Tendance haussière confirmée"
+        # ==========================
+        # Moyennes mobiles
+        # ==========================
+
+        sma = None
+        ema = None
+
+
+        if "SMA" in df.columns:
+
+            sma = float(
+                df["SMA"].iloc[-1]
+            )
+
+            if close > sma:
+                score += 5
+                comments.append(
+                    "Prix au-dessus de la SMA"
+                )
+            else:
+                score -= 2
+                comments.append(
+                    "Prix sous la SMA"
                 )
 
-            elif score <= 5:
 
-                comment = (
-                    "Tendance baissière"
+        if "EMA" in df.columns:
+
+            ema = float(
+                df["EMA"].iloc[-1]
+            )
+
+            if close > ema:
+                score += 5
+                comments.append(
+                    "Prix au-dessus de l'EMA"
+                )
+            else:
+                score -= 2
+                comments.append(
+                    "Prix sous l'EMA"
+                )
+
+
+        # ==========================
+        # Croisement EMA / SMA
+        # ==========================
+
+        if sma is not None and ema is not None:
+
+            if ema > sma:
+
+                score += 3
+
+                comments.append(
+                    "Structure EMA supérieure à SMA"
                 )
 
             else:
 
-                comment = (
-                    "Tendance neutre"
+                score -= 1
+
+                comments.append(
+                    "Structure EMA inférieure à SMA"
                 )
 
 
-            return {
-                "score": score,
-                "comment": comment
-            }
+        # ==========================
+        # MACD
+        # ==========================
 
+        if "MACD" in df.columns:
 
-        except Exception as exc:
-
-            logger.error(
-                "Erreur tendance : %s",
-                exc
+            macd = float(
+                df["MACD"].iloc[-1]
             )
 
-            return {
-                "score": 0,
-                "comment":
-                "Tendance indisponible"
-            }
+            if macd > 0:
+
+                score += 4
+
+                comments.append(
+                    "MACD confirme une tendance haussière"
+                )
+
+            else:
+
+                score -= 3
+
+                comments.append(
+                    "MACD confirme une tendance baissière"
+                )
+
+
+        # ==========================
+        # ADX force tendance
+        # ==========================
+
+        if "ADX" in df.columns:
+
+            adx = float(
+                df["ADX"].iloc[-1]
+            )
+
+            if adx >= 25:
+
+                score += 3
+
+                comments.append(
+                    "ADX confirme une tendance forte"
+                )
+
+            else:
+
+                comments.append(
+                    "ADX indique une tendance faible"
+                )
+
+
+        # Limitation score 0-20
+
+        score = max(
+            0,
+            min(
+                20,
+                score
+            )
+        )
+
+
+        if score >= 15:
+
+            trend_comment = (
+                "Tendance fortement haussière"
+            )
+
+        elif score >= 10:
+
+            trend_comment = (
+                "Tendance légèrement haussière"
+            )
+
+        elif score <= 5:
+
+            trend_comment = (
+                "Tendance baissière ou faible"
+            )
+
+        else:
+
+            trend_comment = (
+                "Tendance neutre"
+            )
+
+
+        return {
+
+            "score": score,
+
+            "comment": (
+                trend_comment
+                + " | "
+                + " | ".join(comments)
+            )
+
+        }
+
+
+    except Exception as exc:
+
+        logger.error(
+            "Erreur analyse tendance V2 : %s",
+            exc
+        )
+
+        return {
+
+            "score": 0,
+
+            "comment":
+            "Analyse tendance indisponible"
+
+        
 
     # ==========================================================
     # RISK REWARD
