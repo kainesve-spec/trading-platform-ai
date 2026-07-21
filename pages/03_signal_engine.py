@@ -1,4 +1,7 @@
-"""Page du Signal Engine."""
+"""
+Page Signal Engine
+Trading AI Platform V2
+"""
 
 import streamlit as st
 
@@ -19,30 +22,34 @@ st.set_page_config(
 st.title("🎯 Signal Engine - Score de Conviction 0-100")
 
 
+# ============================
+# CONFIGURATION
+# ============================
+
 with st.sidebar:
 
     st.header("Configuration")
 
+
     symbol = st.selectbox(
         "Symbole",
-        options=POPULAR_SYMBOLS,
+        POPULAR_SYMBOLS,
         index=0
     )
 
+
     period = st.selectbox(
         "Période",
-        options=PERIODS.keys(),
+        PERIODS.keys(),
         format_func=lambda x: PERIODS[x],
         index=3
     )
 
-    if st.button(
+
+    generate = st.button(
         "Générer Signal",
         use_container_width=True
-    ):
-
-        st.session_state.signal_symbol = symbol
-        st.session_state.signal_period = period
+    )
 
 
 
@@ -51,12 +58,23 @@ if "signal_symbol" not in st.session_state:
     st.session_state.signal_symbol = DEFAULT_SYMBOL
 
 
-
 if "signal_period" not in st.session_state:
 
     st.session_state.signal_period = DEFAULT_PERIOD
 
 
+
+if generate:
+
+    st.session_state.signal_symbol = symbol
+
+    st.session_state.signal_period = period
+
+
+
+# ============================
+# CHARGEMENT DONNEES
+# ============================
 
 with st.spinner("Analyse en cours..."):
 
@@ -71,7 +89,7 @@ with st.spinner("Analyse en cours..."):
     if df is None or df.empty:
 
         st.error(
-            "Erreur lors du chargement des données."
+            "Impossible de charger les données."
         )
 
         st.stop()
@@ -79,12 +97,13 @@ with st.spinner("Analyse en cours..."):
 
 
     # ============================
-    # INDICATEURS TECHNIQUES
+    # INDICATEURS
     # ============================
 
     try:
 
         df = TechnicalIndicators.add_all_indicators(df)
+
 
     except Exception as e:
 
@@ -97,51 +116,65 @@ with st.spinner("Analyse en cours..."):
 
 
     # ============================
-    # DEBUG DONNEES
+    # DEBUG COMPLET
     # ============================
 
     with st.expander(
-        "🔎 Debug Signal Engine"
+        "🔎 Debug Signal Engine",
+        expanded=False
     ):
 
+
         st.write(
-            "Taille DataFrame :",
+            "Dimension :",
             df.shape
         )
 
+
         st.write(
-            "Colonnes disponibles :"
+            "Colonnes :"
         )
+
 
         st.write(
             df.columns.tolist()
         )
 
+
         st.dataframe(
-            df.tail()
+            df.tail(3)
         )
 
 
 
     # ============================
-    # IA ENGINE
+    # IA
     # ============================
+
+    ai_pred = None
+
 
     try:
 
         ai_engine = AIEngine()
+
 
         ai_engine.train_models(
             df,
             st.session_state.signal_symbol
         )
 
+
         ai_pred = ai_engine.predict(df)
 
 
-    except Exception:
 
-        ai_pred = None
+    except Exception as e:
+
+
+        st.warning(
+            f"IA indisponible : {e}"
+        )
 
 
 
@@ -149,10 +182,11 @@ with st.spinner("Analyse en cours..."):
     # SIGNAL ENGINE
     # ============================
 
-    signal_engine = SignalEngine()
+
+    engine = SignalEngine()
 
 
-    signal = signal_engine.generate_signal(
+    signal = engine.generate_signal(
         df,
         ai_prediction=ai_pred
     )
@@ -160,20 +194,20 @@ with st.spinner("Analyse en cours..."):
 
 
 # ============================
-# AFFICHAGE RESULTATS
+# RESULTATS
 # ============================
 
 
 st.subheader(
-    f"Signal : {signal['emoji']} {signal['signal']}"
+    f"{signal['emoji']} {signal['signal']}"
 )
 
 
 
-col1, col2, col3, col4 = st.columns(4)
+c1, c2, c3, c4 = st.columns(4)
 
 
-with col1:
+with c1:
 
     st.metric(
         "Conviction",
@@ -181,7 +215,7 @@ with col1:
     )
 
 
-with col2:
+with c2:
 
     st.metric(
         "Technique",
@@ -189,7 +223,7 @@ with col2:
     )
 
 
-with col3:
+with c3:
 
     st.metric(
         "IA",
@@ -197,7 +231,7 @@ with col3:
     )
 
 
-with col4:
+with c4:
 
     st.metric(
         "Tendance",
@@ -207,14 +241,21 @@ with col4:
 
 
 st.progress(
-    signal["conviction"] / 100,
-    text=f"Conviction : {signal['conviction']}%"
+    signal["conviction"] / 100
+)
+
+
+st.caption(
+    f"Conviction : {signal['conviction']}%"
 )
 
 
 
-st.divider()
+# ============================
+# ANALYSE
+# ============================
 
+st.divider()
 
 
 st.subheader(
@@ -222,11 +263,10 @@ st.subheader(
 )
 
 
-col1, col2 = st.columns(2)
+a1, a2 = st.columns(2)
 
 
-
-with col1:
+with a1:
 
     st.markdown(
         "### Analyse Technique"
@@ -244,6 +284,7 @@ with col1:
         "### Tendance"
     )
 
+
     st.info(
         signal["analysis"].get(
             "trend",
@@ -253,11 +294,12 @@ with col1:
 
 
 
-with col2:
+with a2:
 
     st.markdown(
         "### Prédiction IA"
     )
+
 
     st.info(
         signal["analysis"].get(
@@ -268,8 +310,9 @@ with col2:
 
 
     st.markdown(
-        "### Risk / Reward"
+        "### Risk Reward"
     )
+
 
     st.info(
         signal["analysis"].get(
@@ -281,8 +324,10 @@ with col2:
 
 
 # ============================
-# GESTION RISQUE
+# RISQUE
 # ============================
+
+st.divider()
 
 
 st.subheader(
@@ -291,40 +336,37 @@ st.subheader(
 
 
 
-col1, col2, col3, col4 = st.columns(4)
+r1, r2, r3, r4 = st.columns(4)
 
 
-with col1:
-
-    st.metric(
-        "Entrée",
-        signal["entry_price"]
-    )
+r1.metric(
+    "Entrée",
+    signal["entry_price"]
+)
 
 
-with col2:
-
-    st.metric(
-        "Stop Loss",
-        signal["stop_loss"]
-    )
+r2.metric(
+    "Stop Loss",
+    signal["stop_loss"]
+)
 
 
-with col3:
-
-    st.metric(
-        "Take Profit",
-        signal["take_profit"]
-    )
+r3.metric(
+    "Take Profit",
+    signal["take_profit"]
+)
 
 
-with col4:
+r4.metric(
+    "Ratio R/R",
+    signal["rr_ratio"]
+)
 
-    st.metric(
-        "Ratio R/R",
-        signal["rr_ratio"]
-    )
 
+
+# ============================
+# COMMENTAIRES
+# ============================
 
 
 st.subheader(
@@ -342,27 +384,23 @@ st.write(
 
 
 
-st.divider()
-
-
-
 if signal["direction"] == "BUY":
 
     st.success(
-        f"✅ Signal ACHAT - Conviction {signal['conviction']}%"
+        f"✅ Achat - Conviction {signal['conviction']}%"
     )
 
 
 elif signal["direction"] == "SELL":
 
     st.error(
-        f"⛔ Signal VENTE - Conviction {signal['conviction']}%"
+        f"⛔ Vente - Conviction {signal['conviction']}%"
     )
 
 
 else:
 
     st.warning(
-        f"⏸️ Signal neutre - Conviction {signal['conviction']}%"
+        f"⏸️ Neutre - Conviction {signal['conviction']}%"
     )
         
