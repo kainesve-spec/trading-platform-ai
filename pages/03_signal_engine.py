@@ -1,7 +1,6 @@
 """Page du Signal Engine."""
 
 import streamlit as st
-import pandas as pd
 
 from utils.data_loader import load_data
 from utils.indicators import TechnicalIndicators
@@ -21,6 +20,7 @@ st.title("🎯 Signal Engine - Score de Conviction 0-100")
 
 
 with st.sidebar:
+
     st.header("Configuration")
 
     symbol = st.selectbox(
@@ -40,18 +40,26 @@ with st.sidebar:
         "Générer Signal",
         use_container_width=True
     ):
+
         st.session_state.signal_symbol = symbol
         st.session_state.signal_period = period
 
 
+
 if "signal_symbol" not in st.session_state:
+
     st.session_state.signal_symbol = DEFAULT_SYMBOL
 
+
+
 if "signal_period" not in st.session_state:
+
     st.session_state.signal_period = DEFAULT_PERIOD
 
 
+
 with st.spinner("Analyse en cours..."):
+
 
     df = load_data(
         st.session_state.signal_symbol,
@@ -59,221 +67,302 @@ with st.spinner("Analyse en cours..."):
         interval="1d"
     )
 
-    if df is not None and not df.empty:
+
+    if df is None or df.empty:
+
+        st.error(
+            "Erreur lors du chargement des données."
+        )
+
+        st.stop()
+
+
+
+    # ============================
+    # INDICATEURS TECHNIQUES
+    # ============================
+
+    try:
 
         df = TechnicalIndicators.add_all_indicators(df)
 
-        try:
-            ai_engine = AIEngine()
+    except Exception as e:
 
-            ai_engine.train_models(
-                df,
-                st.session_state.signal_symbol
-            )
-
-            ai_pred = ai_engine.predict(df)
-
-        except Exception:
-            ai_pred = None
-
-
-        signal_engine = SignalEngine()
-           st.write("DEBUG DATA SIGNAL")
-           st.write(df.shape)
-           st.write(df.head())
-           st.write(df.columns.tolist()) 
-        signal = signal_engine.generate_signal(
-            df,
-            ai_prediction=ai_pred
+        st.error(
+            f"Erreur indicateurs : {e}"
         )
 
-
-        st.subheader(
-            f"Signal : {signal['emoji']} {signal['signal']}"
-        )
+        st.stop()
 
 
-        col1, col2, col3, col4 = st.columns(4)
 
+    # ============================
+    # DEBUG DONNEES
+    # ============================
 
-        with col1:
-            st.metric(
-                "Conviction",
-                f"{signal['conviction']:.0f}/100"
-            )
+    with st.expander(
+        "🔎 Debug Signal Engine"
+    ):
 
-        with col2:
-            st.metric(
-                "Technique",
-                f"{signal['technical_score']:.0f}/40"
-            )
-
-        with col3:
-            st.metric(
-                "IA",
-                f"{signal['ai_score']:.0f}/30"
-            )
-
-        with col4:
-            st.metric(
-                "Tendance",
-                f"{signal['trend_score']:.0f}/20"
-            )
-
-
-        st.progress(
-            int(signal["conviction"]),
-            text=f"Conviction : {signal['conviction']:.1f}%"
-        )
-
-
-        st.divider()
-
-
-        st.subheader("📊 Analyse Détaillée")
-
-
-        col1, col2 = st.columns(2)
-
-
-        with col1:
-
-            st.markdown("### Analyse Technique")
-
-            st.info(
-                signal["analysis"].get(
-                    "technical",
-                    "N/A"
-                )
-            )
-
-
-            st.markdown("### Tendance")
-
-            st.info(
-                signal["analysis"].get(
-                    "trend",
-                    "N/A"
-                )
-            )
-
-
-        with col2:
-
-            st.markdown("### Prédiction IA")
-
-            st.info(
-                signal["analysis"].get(
-                    "ai",
-                    "N/A"
-                )
-            )
-
-
-            st.markdown("### Risk / Reward")
-
-            st.info(
-                signal["analysis"].get(
-                    "risk_reward",
-                    "N/A"
-                )
-            )
-
-
-        # Risk Management
-
-        st.subheader("🎯 Gestion du risque")
-
-
-        col1, col2, col3, col4 = st.columns(4)
-
-
-        with col1:
-            st.metric(
-                "Entrée",
-                str(signal["entry_price"])
-            )
-
-        with col2:
-            st.metric(
-                "Stop Loss",
-                str(signal["stop_loss"])
-            )
-
-        with col3:
-            st.metric(
-                "Take Profit",
-                str(signal["take_profit"])
-            )
-
-        with col4:
-            st.metric(
-                "Ratio R/R",
-                str(signal["rr_ratio"])
-            )
-
-
-        # Commentaires
-
-        st.subheader("💬 Commentaires")
-
-        comments = signal.get(
-            "comments",
-            "Aucun commentaire disponible."
+        st.write(
+            "Taille DataFrame :",
+            df.shape
         )
 
         st.write(
-            f"• {comments}"
+            "Colonnes disponibles :"
+        )
+
+        st.write(
+            df.columns.tolist()
+        )
+
+        st.dataframe(
+            df.tail()
         )
 
 
-        st.divider()
 
+    # ============================
+    # IA ENGINE
+    # ============================
 
-        # Actions
+    try:
 
-        if signal["direction"] == "BUY":
+        ai_engine = AIEngine()
 
-            st.success(
-                f"✅ Signal ACHAT - Conviction {signal['conviction']:.0f}%"
-            )
-
-
-            if st.button(
-                "📥 Ajouter au Portfolio",
-                use_container_width=True
-            ):
-                st.success(
-                    "Position ajoutée au portfolio"
-                )
-
-
-        elif signal["direction"] == "SELL":
-
-            st.error(
-                f"⛔ Signal VENTE - Conviction {signal['conviction']:.0f}%"
-            )
-
-
-            if st.button(
-                "📤 Vendre Position",
-                use_container_width=True
-            ):
-                st.success(
-                    "Position vendue"
-                )
-
-
-        else:
-
-            st.warning(
-                f"⏸️ Signal neutre - Conviction {signal['conviction']:.0f}%"
-            )
-
-
-    else:
-
-        st.error(
-            "Erreur lors du chargement des données"
+        ai_engine.train_models(
+            df,
+            st.session_state.signal_symbol
         )
+
+        ai_pred = ai_engine.predict(df)
+
+
+    except Exception:
+
+        ai_pred = None
+
+
+
+    # ============================
+    # SIGNAL ENGINE
+    # ============================
+
+    signal_engine = SignalEngine()
+
+
+    signal = signal_engine.generate_signal(
+        df,
+        ai_prediction=ai_pred
+    )
+
+
+
+# ============================
+# AFFICHAGE RESULTATS
+# ============================
+
+
+st.subheader(
+    f"Signal : {signal['emoji']} {signal['signal']}"
+)
+
+
+
+col1, col2, col3, col4 = st.columns(4)
+
+
+with col1:
+
+    st.metric(
+        "Conviction",
+        f"{signal['conviction']}/100"
+    )
+
+
+with col2:
+
+    st.metric(
+        "Technique",
+        f"{signal['technical_score']}/40"
+    )
+
+
+with col3:
+
+    st.metric(
+        "IA",
+        f"{signal['ai_score']}/30"
+    )
+
+
+with col4:
+
+    st.metric(
+        "Tendance",
+        f"{signal['trend_score']}/20"
+    )
+
+
+
+st.progress(
+    signal["conviction"] / 100,
+    text=f"Conviction : {signal['conviction']}%"
+)
+
+
+
+st.divider()
+
+
+
+st.subheader(
+    "📊 Analyse Détaillée"
+)
+
+
+col1, col2 = st.columns(2)
+
+
+
+with col1:
+
+    st.markdown(
+        "### Analyse Technique"
+    )
+
+    st.info(
+        signal["analysis"].get(
+            "technical",
+            "N/A"
+        )
+    )
+
+
+    st.markdown(
+        "### Tendance"
+    )
+
+    st.info(
+        signal["analysis"].get(
+            "trend",
+            "N/A"
+        )
+    )
+
+
+
+with col2:
+
+    st.markdown(
+        "### Prédiction IA"
+    )
+
+    st.info(
+        signal["analysis"].get(
+            "ai",
+            "N/A"
+        )
+    )
+
+
+    st.markdown(
+        "### Risk / Reward"
+    )
+
+    st.info(
+        signal["analysis"].get(
+            "risk_reward",
+            "N/A"
+        )
+    )
+
+
+
+# ============================
+# GESTION RISQUE
+# ============================
+
+
+st.subheader(
+    "🎯 Gestion du risque"
+)
+
+
+
+col1, col2, col3, col4 = st.columns(4)
+
+
+with col1:
+
+    st.metric(
+        "Entrée",
+        signal["entry_price"]
+    )
+
+
+with col2:
+
+    st.metric(
+        "Stop Loss",
+        signal["stop_loss"]
+    )
+
+
+with col3:
+
+    st.metric(
+        "Take Profit",
+        signal["take_profit"]
+    )
+
+
+with col4:
+
+    st.metric(
+        "Ratio R/R",
+        signal["rr_ratio"]
+    )
+
+
+
+st.subheader(
+    "💬 Commentaires"
+)
+
+
+st.write(
+    "•",
+    signal.get(
+        "comments",
+        "Analyse terminée."
+    )
+)
+
+
+
+st.divider()
+
+
+
+if signal["direction"] == "BUY":
+
+    st.success(
+        f"✅ Signal ACHAT - Conviction {signal['conviction']}%"
+    )
+
+
+elif signal["direction"] == "SELL":
+
+    st.error(
+        f"⛔ Signal VENTE - Conviction {signal['conviction']}%"
+    )
+
+
+else:
+
+    st.warning(
+        f"⏸️ Signal neutre - Conviction {signal['conviction']}%"
+    )
         
