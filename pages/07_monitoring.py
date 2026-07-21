@@ -204,10 +204,12 @@ else:
                 # SIGNAL ENGINE
                 # ==========================
 
-                signal_result = SignalEngine.generate_signal(
-                    df,
-                    ai_prediction=ai_prediction
-                )
+                signal_engine = SignalEngine()
+
+signal_result = signal_engine.generate_signal(
+    df,
+    ai_prediction=ai_prediction
+)
 
 
                 st.divider()
