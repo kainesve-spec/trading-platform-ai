@@ -141,7 +141,7 @@ class SignalEngine:
         df: pd.DataFrame
     ) -> Tuple[int,str]:
 
-        score = 20
+        score = 0
         comments = []
 
         try:
@@ -392,7 +392,7 @@ class SignalEngine:
         df: pd.DataFrame
     ) -> Tuple[int,str]:
 
-        score = 10
+        score = 0
         comments = []
 
         try:
@@ -519,11 +519,16 @@ class SignalEngine:
             atr = None
 
 
-            if "ATR" in df.columns:
+            atr_columns = [
+    "ATR",
+    "atr",
+    "Average_True_Range"
+]
 
-                atr = float(
-                    df["ATR"].iloc[-1]
-                )
+for col in atr_columns:
+    if col in df.columns:
+        atr = float(df[col].iloc[-1])
+        break
 
 
             if atr is None or np.isnan(atr):
