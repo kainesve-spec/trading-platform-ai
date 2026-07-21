@@ -213,15 +213,15 @@ class SignalEngine:
 
         except Exception as exc:
 
-            logger.error(
-                "Erreur analyse technique : %s",
-                exc
-            )
+        logger.error(
+            "Erreur analyse tendance V2 : %s",
+            exc
+        )
 
-            return {
-                "score": 0,
-                "comment": "Analyse technique indisponible"
-            }
+        return {
+            "score": 0,
+            "comment": "Analyse tendance indisponible"
+        }
 
     # ==========================================================
     # ANALYSE IA
@@ -291,11 +291,10 @@ class SignalEngine:
     # ANALYSE TENDANCE
     # ==========================================================
 
-    
-def analyze_trend(
-    self,
-    df: pd.DataFrame
-) -> Dict:
+    def analyze_trend(
+        self,
+        df: pd.DataFrame
+    ) -> Dict:
     """
     Analyse tendance robuste V2.
 
