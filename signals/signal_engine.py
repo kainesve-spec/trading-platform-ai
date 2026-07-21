@@ -44,6 +44,7 @@ class SignalEngine:
     ) -> Dict:
 
         try:
+            print("VERSION SIGNAL ENGINE V2.1 ACTIVE")
             df = self._normalize_dataframe(df)
 
             if df.empty or "Close" not in df.columns:
