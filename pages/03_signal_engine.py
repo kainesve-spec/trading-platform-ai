@@ -78,7 +78,10 @@ with st.spinner("Analyse en cours..."):
 
 
         signal_engine = SignalEngine()
-
+           st.write("DEBUG DATA SIGNAL")
+           st.write(df.shape)
+           st.write(df.head())
+           st.write(df.columns.tolist()) 
         signal = signal_engine.generate_signal(
             df,
             ai_prediction=ai_pred
