@@ -132,7 +132,19 @@ else:
 
 
                 df = TechnicalIndicators.add_all_indicators(df)
+                ai_engine = AIEngine()
 
+                ai_result = ai_engine.predict(df)
+
+                if "consensus" in ai_result:
+
+                    ai_prediction = (
+                         ai_result["consensus"] - 0.5
+                    ) * 2
+
+                 else:
+
+                    ai_prediction = None
 
                 col1, col2, col3, col4 = st.columns(4)
 
@@ -188,7 +200,10 @@ else:
                 # SIGNAL ENGINE
                 # ==========================
 
-                signal_result = SignalEngine.generate_signal(df)
+                signal_result = SignalEngine.generate_signal(
+                    df,
+                    ai_prediction=ai_prediction
+                )
 
 
                 st.divider()
