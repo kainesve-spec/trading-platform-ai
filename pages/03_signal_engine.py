@@ -272,4 +272,5 @@ with st.spinner("Analyse en cours..."):
 
         st.error(
             "Erreur lors du chargement des données"
+        )
         
