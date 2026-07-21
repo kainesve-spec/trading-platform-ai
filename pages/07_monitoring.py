@@ -133,7 +133,7 @@ else:
 
                 df = TechnicalIndicators.add_all_indicators(df)
                 ai_engine = AIEngine()
-
+                ai_engine.load_models(symbol)
                 ai_result = ai_engine.predict(df)
 
                 if "consensus" in ai_result:
