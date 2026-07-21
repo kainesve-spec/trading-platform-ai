@@ -211,8 +211,7 @@ signal_result = signal_engine.generate_signal(
     ai_prediction=ai_prediction
 )
 
-
-                st.divider()
+st.divider()
 
                 st.subheader("📡 Signal IA")
 
