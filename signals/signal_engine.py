@@ -471,7 +471,7 @@ class SignalEngine:
         except Exception:
             return None
 
-     def _generate_comments(
+    def _generate_comments(
         self,
         signal,
         conviction,
