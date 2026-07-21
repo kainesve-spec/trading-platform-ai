@@ -317,5 +317,6 @@ else:
                     fig,
 
                     use_container_width=True
+                )  
 
             )
