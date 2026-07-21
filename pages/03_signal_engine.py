@@ -243,7 +243,7 @@ with st.spinner("Analyse en cours..."):
             )
 
 
-              st.divider()
+           st.divider()
 
 
         # Actions
