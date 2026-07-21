@@ -1,37 +1,32 @@
 """
-Moteur professionnel de génération de signaux de trading.
+Signal Engine V2.1 Pro
+Trading AI Platform
 
-Signaux générés :
+Génération de signaux :
 - STRONG BUY 🟢
 - BUY 🔼
 - BUY & SELL ⚖️
 - SELL 🔽
 - STRONG SELL 🔴
 
-Score de conviction : 0 - 100
-
-Pondération :
-- Analyse technique : 40 points
-- Analyse IA : 30 points
-- Analyse tendance : 20 points
-- Risk Reward : 10 points
+Score conviction :
+- Technique : 40
+- IA : 30
+- Tendance : 20
+- Risk Reward : 10
 """
 
 import logging
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 logger = logging.getLogger(__name__)
 
 
 class SignalEngine:
-    """
-    Moteur professionnel de signaux de trading.
-    Compatible crypto, actions et forex.
-    """
 
     TECHNICAL_WEIGHT = 40
     AI_WEIGHT = 30
@@ -41,71 +36,64 @@ class SignalEngine:
     def __init__(self):
         self.logger = logger
 
+
     def generate_signal(
         self,
         df: pd.DataFrame,
-        ai_prediction: Optional[float] = None
+        ai_prediction: Optional[Union[float, Dict]] = None
     ) -> Dict:
 
         try:
             df = self._normalize_dataframe(df)
 
-            if df.empty:
+            if df.empty or "Close" not in df.columns:
                 return self._empty_signal()
 
-            technical_score, technical_comments = self.analyze_technical(df)
 
-            ai_score, ai_comments = self.analyze_ai(ai_prediction)
+            technical_score, technical_analysis = (
+                self.analyze_technical(df)
+            )
 
-            trend_score, trend_comments = self.analyze_trend(df)
+            ai_score, ai_analysis = (
+                self.analyze_ai(ai_prediction)
+            )
 
-            risk_score, risk_data = self.analyze_risk_reward(df)
+            trend_score, trend_analysis = (
+                self.analyze_trend(df)
+            )
 
-            conviction = (
+            risk_score, risk_data = (
+                self.analyze_risk_reward(
+                    df,
+                    technical_score,
+                    trend_score
+                )
+            )
+
+
+            conviction = int(np.clip(
                 technical_score
                 + ai_score
                 + trend_score
-                + risk_score
+                + risk_score,
+                0,
+                100
+            ))
+
+
+            signal, emoji, direction = (
+                self._classify_signal(
+                    conviction
+                )
             )
 
-            conviction = int(np.clip(conviction, 0, 100))
-
-            coherence_bonus = self.check_coherence(
-                technical_score,
-                ai_score,
-                trend_score
-            )
-
-            conviction += coherence_bonus
-            conviction = int(np.clip(conviction, 0, 100))
-
-            signal, emoji, direction = self._classify_signal(conviction)
-
-            entry_price = risk_data["entry_price"]
-            stop_loss = risk_data["stop_loss"]
-            take_profit = risk_data["take_profit"]
-            rr_ratio = risk_data["rr_ratio"]
-
-            analysis = {
-                "technical": technical_comments,
-                "ai": ai_comments,
-                "trend": trend_comments,
-                "risk_reward": risk_data["analysis"]
-            }
-
-            comments = self._generate_comments(
-                signal,
-                conviction,
-                technical_score,
-                ai_score,
-                trend_score,
-                rr_ratio
-            )
 
             return {
+
                 "signal": signal,
                 "emoji": emoji,
                 "direction": direction,
+
                 "conviction": conviction,
 
                 "technical_score": technical_score,
@@ -113,168 +101,374 @@ class SignalEngine:
                 "trend_score": trend_score,
                 "risk_score": risk_score,
 
-                "entry_price": entry_price,
-                "stop_loss": stop_loss,
-                "take_profit": take_profit,
-                "rr_ratio": rr_ratio,
+                "entry_price": risk_data["entry_price"],
+                "stop_loss": risk_data["stop_loss"],
+                "take_profit": risk_data["take_profit"],
 
-                "analysis": analysis,
-                "comments": comments
+                "rr_ratio": risk_data["rr_ratio"],
+
+                "analysis": {
+
+                    "technical": technical_analysis,
+
+                    "ai": ai_analysis,
+
+                    "trend": trend_analysis,
+
+                    "risk_reward":
+                        risk_data["analysis"]
+                }
+
             }
 
+
         except Exception as e:
+
             logger.exception(
-                f"Erreur génération signal : {e}"
+                f"Erreur Signal Engine : {e}"
             )
+
             return self._empty_signal()
+
+
+
+    # =====================================================
+    # ANALYSE TECHNIQUE 40 POINTS
+    # =====================================================
 
     def analyze_technical(
         self,
         df: pd.DataFrame
-    ) -> Tuple[int, str]:
+    ) -> Tuple[int,str]:
 
-        score = 0
+        score = 20
         comments = []
 
         try:
+
             last = df.iloc[-1]
 
-            rsi = self._get_value(last, "RSI")
-            macd = self._get_value(last, "MACD")
-            macd_signal = self._get_value(last, "MACD_Signal")
 
-            close = self._get_value(last, "Close")
-            ema20 = self._get_value(last, "EMA20")
-            ema50 = self._get_value(last, "EMA50")
+            rsi = self._get_value(last,"RSI")
+            macd = self._get_value(last,"MACD")
+            macd_signal = self._get_value(
+                last,
+                "MACD_Signal"
+            )
+
+            close = self._get_value(
+                last,
+                "Close"
+            )
+
+            ema20 = self._get_value(
+                last,
+                "EMA20"
+            )
+
+            ema50 = self._get_value(
+                last,
+                "EMA50"
+            )
+
+
+            # RSI (8 points)
 
             if rsi is not None:
+
                 if rsi < 30:
-                    score += 12
-                    comments.append(
-                        "RSI en zone survendue, potentiel rebond."
-                    )
-                elif rsi > 70:
-                    score -= 10
-                    comments.append(
-                        "RSI en zone de surachat."
-                    )
-                else:
+
                     score += 5
 
-            if macd is not None and macd_signal is not None:
-                if macd > macd_signal:
-                    score += 10
                     comments.append(
-                        "MACD positif."
+                        "RSI survendu."
                     )
+
+                elif rsi > 70:
+
+                    score -= 5
+
+                    comments.append(
+                        "RSI suracheté."
+                    )
+
                 else:
-                    score -= 8
+
+                    score += 3
+
+
+
+            # MACD (8 points)
+
+            if (
+                macd is not None
+                and macd_signal is not None
+            ):
+
+                if macd > macd_signal:
+
+                    score += 6
+
+                    comments.append(
+                        "MACD haussier."
+                    )
+
+                else:
+
+                    score -= 4
+
                     comments.append(
                         "MACD baissier."
                     )
 
-            if close and ema20 and ema50:
+
+
+            # Moyennes mobiles (8 points)
+
+            if (
+                close
+                and ema20
+                and ema50
+            ):
+
                 if close > ema20 > ema50:
-                    score += 12
+
+                    score += 8
+
                     comments.append(
-                        "Prix au-dessus des moyennes mobiles."
-                    )
-                elif close < ema20 < ema50:
-                    score -= 10
-                    comments.append(
-                        "Tendance mobile négative."
+                        "Structure EMA positive."
                     )
 
-            score = int(
-                np.clip(
-                    score,
-                    0,
-                    self.TECHNICAL_WEIGHT
-                )
-            )
+                elif close < ema20 < ema50:
+
+                    score -= 6
+
+                    comments.append(
+                        "Structure EMA négative."
+                    )
+
+
+            score = int(np.clip(
+                score,
+                0,
+                self.TECHNICAL_WEIGHT
+            ))
+
 
             return score, " ".join(comments)
 
+
+
         except Exception as e:
+
             logger.error(
-                f"Erreur analyse technique : {e}"
+                f"Erreur technique : {e}"
             )
-            return 0, "Analyse technique indisponible."
+
+            return 20, "Analyse technique limitée."
+    # =====================================================
+    # ANALYSE IA 30 POINTS
+    # =====================================================
 
     def analyze_ai(
         self,
-        ai_prediction: Optional[float]
+        ai_prediction=None
     ) -> Tuple[int, str]:
 
-        if ai_prediction is None:
-            return 15, "Aucune prédiction IA disponible."
-
         try:
-            prediction = float(ai_prediction)
 
-            if prediction >= 0.75:
-                return 30, "IA fortement haussière."
+            if ai_prediction is None:
+                return (
+                    15,
+                    "Aucune prédiction IA disponible."
+                )
 
-            if prediction >= 0.55:
-                return 22, "IA légèrement haussière."
 
-            if prediction <= 0.25:
-                return 5, "IA fortement baissière."
+            probability = None
+            direction = None
 
-            if prediction <= 0.45:
-                return 10, "IA légèrement baissière."
 
-            return 15, "IA neutre."
+            if isinstance(ai_prediction, dict):
+
+                probability = ai_prediction.get(
+                    "probability"
+                )
+
+                direction = ai_prediction.get(
+                    "prediction"
+                )
+
+
+            else:
+
+                probability = float(
+                    ai_prediction
+                )
+
+
+            if probability is not None:
+
+                probability = float(
+                    probability
+                )
+
+
+                if probability >= 0.80:
+
+                    return (
+                        30,
+                        "IA fortement haussière."
+                    )
+
+                elif probability >= 0.60:
+
+                    return (
+                        24,
+                        "IA légèrement haussière."
+                    )
+
+                elif probability <= 0.20:
+
+                    return (
+                        30,
+                        "IA fortement baissière."
+                    )
+
+                elif probability <= 0.40:
+
+                    return (
+                        10,
+                        "IA légèrement baissière."
+                    )
+
+
+            if direction:
+
+                direction = str(
+                    direction
+                ).upper()
+
+
+                if direction == "BUY":
+
+                    return (
+                        25,
+                        "IA signale un achat."
+                    )
+
+                if direction == "SELL":
+
+                    return (
+                        10,
+                        "IA signale une vente."
+                    )
+
+
+            return (
+                15,
+                "IA neutre."
+            )
+
 
         except Exception as e:
+
             logger.error(
-                f"Erreur analyse IA : {e}"
+                f"Erreur IA : {e}"
             )
-            return 15, "Analyse IA indisponible."
+
+            return (
+                15,
+                "IA indisponible."
+            )
+
+
+
+    # =====================================================
+    # ANALYSE TENDANCE 20 POINTS
+    # =====================================================
 
     def analyze_trend(
         self,
         df: pd.DataFrame
-    ) -> Tuple[int, str]:
+    ) -> Tuple[int,str]:
 
         score = 10
         comments = []
 
         try:
+
             last = df.iloc[-1]
 
-            close = self._get_value(last, "Close")
-            ema50 = self._get_value(last, "EMA50")
-            ema200 = self._get_value(last, "EMA200")
-            adx = self._get_value(last, "ADX")
+
+            close = self._get_value(
+                last,
+                "Close"
+            )
+
+            ema50 = self._get_value(
+                last,
+                "EMA50"
+            )
+
+            ema200 = self._get_value(
+                last,
+                "EMA200"
+            )
+
+            adx = self._get_value(
+                last,
+                "ADX"
+            )
+
+
 
             if close and ema50:
+
                 if close > ema50:
-                    score += 5
+
+                    score += 4
+
                     comments.append(
-                        "Tendance court terme positive."
+                        "Tendance court terme haussière."
                     )
+
                 else:
-                    score -= 5
+
+                    score -= 4
+
                     comments.append(
-                        "Pression vendeuse court terme."
+                        "Tendance court terme baissière."
                     )
+
+
 
             if close and ema200:
+
                 if close > ema200:
-                    score += 3
+
+                    score += 4
+
                     comments.append(
-                        "Structure long terme haussière."
+                        "Tendance long terme positive."
                     )
+
                 else:
-                    score -= 3
+
+                    score -= 4
+
+
 
             if adx:
+
                 if adx > 25:
+
                     score += 2
+
                     comments.append(
-                        "Tendance confirmée par ADX."
+                        "ADX confirme une tendance forte."
                     )
+
+
 
             score = int(
                 np.clip(
@@ -284,102 +478,179 @@ class SignalEngine:
                 )
             )
 
-            return score, " ".join(comments)
+
+            return (
+                score,
+                " ".join(comments)
+            )
+
 
         except Exception as e:
+
             logger.error(
-                f"Erreur analyse tendance : {e}"
+                f"Erreur tendance : {e}"
             )
-            return 10, "Analyse tendance indisponible."
+
+            return (
+                10,
+                "Tendance indisponible."
+            )
+
+
+
+    # =====================================================
+    # RISK REWARD 10 POINTS
+    # =====================================================
 
     def analyze_risk_reward(
         self,
-        df: pd.DataFrame
+        df: pd.DataFrame,
+        technical_score: int,
+        trend_score: int
     ) -> Tuple[int, Dict]:
 
         try:
-            close = float(df["Close"].iloc[-1])
+
+            close = float(
+                df["Close"].iloc[-1]
+            )
+
 
             atr = None
 
-            if "ATR" in df.columns:
-                atr = float(df["ATR"].iloc[-1])
 
-            if not atr or np.isnan(atr):
+            if "ATR" in df.columns:
+
+                atr = float(
+                    df["ATR"].iloc[-1]
+                )
+
+
+            if atr is None or np.isnan(atr):
+
                 atr = close * 0.02
 
-            stop_loss = close - atr
-            take_profit = close + (atr * 2)
 
-            risk = abs(close - stop_loss)
-            reward = abs(take_profit - close)
 
-            rr_ratio = (
-                reward / risk
-                if risk > 0
-                else 0
+            bullish = (
+                technical_score
+                + trend_score
+            ) >= 40
+
+
+
+            if bullish:
+
+                stop_loss = (
+                    close - atr
+                )
+
+                take_profit = (
+                    close + (atr * 2.5)
+                )
+
+
+            else:
+
+                stop_loss = (
+                    close + atr
+                )
+
+                take_profit = (
+                    close - (atr * 2.5)
+                )
+
+
+
+            risk = abs(
+                close - stop_loss
             )
 
-            if rr_ratio >= 2:
+            reward = abs(
+                take_profit - close
+            )
+
+
+
+            rr_ratio = (
+
+                reward / risk
+
+                if risk > 0
+
+                else 0
+
+            )
+
+
+
+            if rr_ratio >= 3:
+
                 score = 10
+
+            elif rr_ratio >= 2:
+
+                score = 8
+
             elif rr_ratio >= 1.5:
-                score = 7
+
+                score = 6
+
             elif rr_ratio >= 1:
-                score = 5
+
+                score = 4
+
             else:
-                score = 2
+
+                score = 0
+
+
 
             return score, {
-                "entry_price": round(close, 4),
-                "stop_loss": round(stop_loss, 4),
-                "take_profit": round(take_profit, 4),
-                "rr_ratio": round(rr_ratio, 2),
-                "analysis": (
-                    f"Ratio risque rendement : {round(rr_ratio,2)}"
-                )
+
+                "entry_price":
+                    round(close,4),
+
+                "stop_loss":
+                    round(stop_loss,4),
+
+                "take_profit":
+                    round(take_profit,4),
+
+                "rr_ratio":
+                    round(rr_ratio,2),
+
+                "analysis":
+                    f"Ratio Risk Reward {round(rr_ratio,2)}"
+
             }
 
+
+
         except Exception as e:
+
             logger.error(
                 f"Erreur Risk Reward : {e}"
             )
 
+
             return 0, {
-                "entry_price": 0,
-                "stop_loss": 0,
-                "take_profit": 0,
-                "rr_ratio": 0,
-                "analysis": "Risk Reward indisponible."
+
+                "entry_price":0,
+
+                "stop_loss":0,
+
+                "take_profit":0,
+
+                "rr_ratio":0,
+
+                "analysis":
+                    "Risk Reward indisponible."
+
             }
-
-    def check_coherence(
-        self,
-        technical_score: int,
-        ai_score: int,
-        trend_score: int
-    ) -> int:
-
-        try:
-            bonus = 0
-
-            if (
-                technical_score > 25
-                and ai_score > 20
-                and trend_score > 12
-            ):
-                bonus = 5
-
-            elif (
-                technical_score < 10
-                and ai_score < 10
-                and trend_score < 8
-            ):
-                bonus = -5
-
-            return bonus
-
-        except Exception:
-            return 0
+    # =====================================================
+    # CLASSIFICATION DU SIGNAL
+    # =====================================================
 
     def _classify_signal(
         self,
@@ -387,18 +658,54 @@ class SignalEngine:
     ) -> Tuple[str, str, str]:
 
         if conviction >= 80:
-            return "STRONG BUY", "🟢", "BUY"
 
-        if conviction >= 60:
-            return "BUY", "🔼", "BUY"
+            return (
+                "STRONG BUY",
+                "🟢",
+                "BUY"
+            )
 
-        if conviction >= 45:
-            return "BUY & SELL", "⚖️", "NEUTRAL"
 
-        if conviction >= 25:
-            return "SELL", "🔽", "SELL"
+        elif conviction >= 60:
 
-        return "STRONG SELL", "🔴", "SELL"
+            return (
+                "BUY",
+                "🔼",
+                "BUY"
+            )
+
+
+        elif conviction >= 45:
+
+            return (
+                "BUY & SELL",
+                "⚖️",
+                "NEUTRAL"
+            )
+
+
+        elif conviction >= 30:
+
+            return (
+                "SELL",
+                "🔽",
+                "SELL"
+            )
+
+
+        else:
+
+            return (
+                "STRONG SELL",
+                "🔴",
+                "SELL"
+            )
+
+
+
+    # =====================================================
+    # NORMALISATION DATAFRAME
+    # =====================================================
 
     def _normalize_dataframe(
         self,
@@ -406,50 +713,48 @@ class SignalEngine:
     ) -> pd.DataFrame:
 
         try:
+
             if df is None:
+
                 return pd.DataFrame()
 
-            if not isinstance(df, pd.DataFrame):
+
+            if not isinstance(
+                df,
+                pd.DataFrame
+            ):
+
                 return pd.DataFrame()
+
+
 
             df = df.copy()
+
 
             df.columns = [
                 str(col).strip()
                 for col in df.columns
             ]
 
+
             return df.dropna(
                 how="all"
             )
 
+
         except Exception as e:
+
             logger.error(
-                f"Erreur normalisation dataframe : {e}"
+                f"Erreur normalisation DF : {e}"
             )
+
             return pd.DataFrame()
 
-    def _empty_signal(self) -> Dict:
 
-        return {
-            "signal": "BUY & SELL",
-            "emoji": "⚖️",
-            "direction": "NEUTRAL",
-            "conviction": 0,
 
-            "technical_score": 0,
-            "ai_score": 0,
-            "trend_score": 0,
-            "risk_score": 0,
-
-            "entry_price": 0,
-            "stop_loss": 0,
-            "take_profit": 0,
-            "rr_ratio": 0,
-
-            "analysis": {},
-            "comments": "Données insuffisantes."
-        }
+    # =====================================================
+    # VALEUR SECURISEE
+    # =====================================================
 
     def _get_value(
         self,
@@ -458,35 +763,213 @@ class SignalEngine:
     ):
 
         try:
+
             if column not in row.index:
+
                 return None
+
 
             value = row[column]
 
+
             if pd.isna(value):
+
                 return None
+
 
             return float(value)
 
+
         except Exception:
+
             return None
 
-    def _generate_comments(
-        self,
-        signal,
-        conviction,
-        technical,
-        ai,
-        trend,
-        rr
-    ) -> str:
 
-        return (
-            f"Signal {signal} avec une conviction de "
-            f"{conviction}/100. "
-            f"Technique: {technical}/40, "
-            f"IA: {ai}/30, "
-            f"Tendance: {trend}/20, "
-            f"Risk Reward: {rr}."
-        )
-        
+
+    # =====================================================
+    # SIGNAL VIDE
+    # =====================================================
+
+    def _empty_signal(
+        self
+    ) -> Dict:
+
+
+        return {
+
+            "signal":
+                "BUY & SELL",
+
+            "emoji":
+                "⚖️",
+
+            "direction":
+                "NEUTRAL",
+
+
+            "conviction":
+                0,
+
+
+            "technical_score":
+                0,
+
+            "ai_score":
+                0,
+
+            "trend_score":
+                0,
+
+            "risk_score":
+                0,
+
+
+            "entry_price":
+                0,
+
+            "stop_loss":
+                0,
+
+            "take_profit":
+                0,
+
+
+            "rr_ratio":
+                0,
+
+
+            "analysis": {},
+
+
+            "comments":
+                "Données insuffisantes."
+
+        }
+
+
+
+    # =====================================================
+    # ANALYSE AVANCEE OPTIONNELLE
+    # =====================================================
+
+    def analyze_extra_indicators(
+        self,
+        df: pd.DataFrame
+    ) -> Dict:
+
+
+        """
+        Analyse complémentaire :
+        Bollinger
+        Volume
+        Momentum
+
+        Peut être utilisée par
+        analyze_technical()
+        """
+
+        result = {
+
+            "bollinger":
+                "Non disponible",
+
+            "volume":
+                "Non disponible",
+
+            "momentum":
+                "Non disponible"
+
+        }
+
+
+        try:
+
+            last = df.iloc[-1]
+
+
+
+            close = self._get_value(
+                last,
+                "Close"
+            )
+
+
+            upper = self._get_value(
+                last,
+                "BB_Upper"
+            )
+
+
+            lower = self._get_value(
+                last,
+                "BB_Lower"
+            )
+
+
+            volume = self._get_value(
+                last,
+                "Volume"
+            )
+
+
+            momentum = self._get_value(
+                last,
+                "Momentum"
+            )
+
+
+
+            if close and upper:
+
+                if close >= upper:
+
+                    result["bollinger"] = (
+                        "Prix proche résistance Bollinger."
+                    )
+
+
+            if close and lower:
+
+                if close <= lower:
+
+                    result["bollinger"] = (
+                        "Prix proche support Bollinger."
+                    )
+
+
+
+            if volume:
+
+                result["volume"] = (
+                    "Volume disponible."
+                )
+
+
+
+            if momentum:
+
+                if momentum > 0:
+
+                    result["momentum"] = (
+                        "Momentum positif."
+                    )
+
+                else:
+
+                    result["momentum"] = (
+                        "Momentum négatif."
+                    )
+
+
+            return result
+
+
+
+        except Exception as e:
+
+            logger.error(
+                f"Erreur indicateurs avancés : {e}"
+            )
+
+
+            return result
