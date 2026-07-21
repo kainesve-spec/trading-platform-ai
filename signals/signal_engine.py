@@ -75,9 +75,9 @@ class SignalEngine:
             return SignalEngine._empty_signal()
 
 
-        try:
+         try:
 
-             technical = SignalEngine.analyze_technical(df)
+            technical = SignalEngine.analyze_technical(df)
 
             ai = SignalEngine.analyze_ai(
                 ai_prediction
