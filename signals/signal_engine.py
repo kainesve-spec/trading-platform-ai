@@ -179,65 +179,179 @@ class SignalEngine:
 
 
     # =====================================================
-    # NORMALISATION DES DONNEES
+    # NORMALISATION DATAFRAME
     # =====================================================
 
     def _normalize_dataframe(
-    self,
-    df: pd.DataFrame
-) -> pd.DataFrame:
+        self,
+        df: pd.DataFrame
+    ) -> pd.DataFrame:
 
-    try:
+        """
+        Normalisation du DataFrame avant analyse.
 
-        if df is None:
+        Objectifs :
+        - Vérifier que les données existent
+        - Uniformiser les noms de colonnes
+        - Convertir les colonnes OHLCV
+        - Corriger les différences
+          close / Close
+        """
+
+        try:
+
+            if df is None:
+
+                return pd.DataFrame()
+
+
+            if not isinstance(
+                df,
+                pd.DataFrame
+            ):
+
+                return pd.DataFrame()
+
+
+
+            df = df.copy()
+
+
+
+            # Nettoyage noms colonnes
+
+            df.columns = [
+
+                str(col).strip()
+
+                for col in df.columns
+
+            ]
+
+
+
+            # Conversion noms standards
+
+            rename_map = {
+
+
+                "open":
+                    "Open",
+
+
+                "high":
+                    "High",
+
+
+                "low":
+                    "Low",
+
+
+                "close":
+                    "Close",
+
+
+                "volume":
+                    "Volume",
+
+
+
+                "ema_12":
+                    "EMA_12",
+
+
+                "ema_26":
+                    "EMA_26",
+
+
+                "sma_20":
+                    "SMA_20",
+
+
+                "sma_50":
+                    "SMA_50"
+
+            }
+
+
+
+            df = df.rename(
+                columns=rename_map
+            )
+
+
+
+            # Suppression colonnes doubles
+
+            df = df.loc[
+                :,
+                ~df.columns.duplicated()
+            ]
+
+
+
+            # Conversion numérique
+
+            numeric_columns = [
+
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "Volume",
+                "RSI",
+                "MACD",
+                "MACD_Signal",
+                "ATR",
+                "ADX",
+                "EMA_12",
+                "EMA_26"
+
+            ]
+
+
+
+            for col in numeric_columns:
+
+                if col in df.columns:
+
+                    df[col] = pd.to_numeric(
+                        df[col],
+                        errors="coerce"
+                    )
+
+
+
+            # Nettoyage valeurs infinies
+
+            df = df.replace(
+                [np.inf, -np.inf],
+                np.nan
+            )
+
+
+
+            # Garder les lignes valides
+
+            df = df.dropna(
+                how="all"
+            )
+
+
+
+            return df
+
+
+
+        except Exception as e:
+
+
+            logger.error(
+                f"Erreur normalisation DF : {e}"
+            )
+
+
             return pd.DataFrame()
-
-
-        if not isinstance(df, pd.DataFrame):
-            return pd.DataFrame()
-
-
-        df = df.copy()
-
-
-        # Uniformiser les noms de colonnes
-        df.columns = [
-            str(col).strip()
-            for col in df.columns
-        ]
-
-
-        rename_map = {
-
-            "close": "Close",
-            "open": "Open",
-            "high": "High",
-            "low": "Low",
-            "volume": "Volume",
-
-            "ema_12": "EMA_12",
-            "ema_26": "EMA_26"
-
-        }
-
-
-        df = df.rename(
-            columns=rename_map
-        )
-
-
-        return df.dropna(
-            how="all"
-        )
-
-
-    except Exception as e:
-
-        logger.error(
-            f"Erreur normalisation DF : {e}"
-        )
-
-        return pd.DataFrame()
     # =====================================================
     # ANALYSE TECHNIQUE 40 POINTS
     # =====================================================
