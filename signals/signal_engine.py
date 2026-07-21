@@ -521,15 +521,21 @@ class SignalEngine:
 
 
             atr_columns = [
-    "ATR",
-    "atr",
-    "Average_True_Range"
-]
+    atr_columns = [
+                "ATR",
+                "atr",
+                "Average_True_Range"
+            ]
 
-for col in atr_columns:
-    if col in df.columns:
-        atr = float(df[col].iloc[-1])
-        break
+            for col in atr_columns:
+
+                if col in df.columns:
+
+                    atr = float(
+                        df[col].iloc[-1]
+                    )
+
+                    break
 
 
             if atr is None or np.isnan(atr):
