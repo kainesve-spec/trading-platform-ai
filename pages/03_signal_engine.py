@@ -231,19 +231,19 @@ with st.spinner("Analyse en cours..."):
 
         # Commentaires
 
-st.subheader("💬 Commentaires")
+            st.subheader("💬 Commentaires")
 
-comments = signal.get(
-    "comments",
-    "Aucun commentaire disponible."
-)
+            comments = signal.get(
+               "comments",
+               "Aucun commentaire disponible."
+            )
 
-st.write(
-    f"• {comments}"
-)
+            st.write(
+                  f"• {comments}"
+            )
 
 
-        st.divider()
+              st.divider()
 
 
         # Actions
