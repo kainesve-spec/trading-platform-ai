@@ -88,7 +88,7 @@ class SignalEngine:
             risk = SignalEngine.analyze_risk_reward(df)
 
 
-            total_score = (
+             total_score = (
                 technical["score"]
                 + ai["score"]
                 + trend["score"]
@@ -96,12 +96,11 @@ class SignalEngine:
             )
 
 
-            # Bonus / pénalité de cohérence IA + Tendance
-
-             coherence_bonus = SignalEngine.check_coherence(
+            coherence_bonus = SignalEngine.check_coherence(
                 ai,
                 trend
             )
+
 
             total_score += coherence_bonus
 
@@ -109,6 +108,7 @@ class SignalEngine:
             conviction = int(
                 np.clip(total_score, 0, 100)
             )
+
 
 
             signal = SignalEngine._classify_signal(
