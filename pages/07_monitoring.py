@@ -206,12 +206,11 @@ else:
 
                 signal_engine = SignalEngine()
 
-signal_result = signal_engine.generate_signal(
-    df,
-    ai_prediction=ai_prediction
-)
-
-st.divider()
+                signal_result = signal_engine.generate_signal(
+                    df,
+                    ai_prediction=ai_prediction
+                )  
+                st.divider()
 
                 st.subheader("📡 Signal IA")
 
