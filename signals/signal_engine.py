@@ -77,7 +77,7 @@ class SignalEngine:
 
         try:
 
-            technical = SignalEngine.analyze_technical(df)
+             technical = SignalEngine.analyze_technical(df)
 
             ai = SignalEngine.analyze_ai(
                 ai_prediction
@@ -88,7 +88,7 @@ class SignalEngine:
             risk = SignalEngine.analyze_risk_reward(df)
 
 
-             total_score = (
+            total_score = (
                 technical["score"]
                 + ai["score"]
                 + trend["score"]
@@ -107,6 +107,7 @@ class SignalEngine:
 
             conviction = int(
                 np.clip(total_score, 0, 100)
+            )
             )
 
 
