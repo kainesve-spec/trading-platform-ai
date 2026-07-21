@@ -352,8 +352,8 @@ class SignalEngine:
 
 
             return pd.DataFrame()
-    # =====================================================
-    # ANALYSE TECHNIQUE 40 POINTS
+     # =====================================================
+    # ANALYSE TECHNIQUE V2.2 PRO - 40 POINTS
     # =====================================================
 
     def analyze_technical(
@@ -364,78 +364,119 @@ class SignalEngine:
         score = 0
         comments = []
 
-
         try:
 
-            # -----------------------------
-            # RSI
-            # -----------------------------
+            last = df.iloc[-1]
 
-            rsi = self._get_indicator(
-                df,
-                [
-                    "RSI",
-                    "rsi"
-                ]
+
+            close = self._get_value(
+                last,
+                "Close"
             )
 
+            rsi = self._get_value(
+                last,
+                "RSI"
+            )
+
+            macd = self._get_value(
+                last,
+                "MACD"
+            )
+
+            macd_signal = self._get_value(
+                last,
+                "MACD_Signal"
+            )
+
+            ema12 = self._get_value(
+                last,
+                "EMA_12"
+            )
+
+            ema26 = self._get_value(
+                last,
+                "EMA_26"
+            )
+
+            stoch_k = self._get_value(
+                last,
+                "Stoch_K"
+            )
+
+            stoch_d = self._get_value(
+                last,
+                "Stoch_D"
+            )
+
+            bb_high = self._get_value(
+                last,
+                "BB_High"
+            )
+
+            bb_low = self._get_value(
+                last,
+                "BB_Low"
+            )
+
+            volume = self._get_value(
+                last,
+                "Volume"
+            )
+
+            obv = self._get_value(
+                last,
+                "OBV"
+            )
+
+
+            # ==========================
+            # RSI - 8 points
+            # ==========================
 
             if rsi is not None:
 
                 if rsi < 30:
 
-                    score += 6
+                    score += 8
 
                     comments.append(
                         "RSI survendu - potentiel rebond."
                     )
 
+                elif 50 <= rsi <= 70:
+
+                    score += 5
+
+                    comments.append(
+                        "RSI zone haussière."
+                    )
 
                 elif rsi > 70:
 
-                    score -= 4
+                    score -= 3
 
                     comments.append(
-                        "RSI suracheté - risque correction."
+                        "RSI suracheté."
                     )
-
 
                 else:
 
-                    score += 3
+                    score += 2
 
                     comments.append(
-                        "RSI zone neutre."
+                        "RSI neutre."
                     )
 
 
-
-            # -----------------------------
-            # MACD
-            # -----------------------------
-
-            macd = self._get_indicator(
-                df,
-                [
-                    "MACD"
-                ]
-            )
-
-
-            macd_signal = self._get_indicator(
-                df,
-                [
-                    "MACD_Signal",
-                    "MACD_signal"
-                ]
-            )
-
+            # ==========================
+            # MACD - 8 points
+            # ==========================
 
             if (
                 macd is not None
                 and macd_signal is not None
             ):
-
 
                 if macd > macd_signal:
 
@@ -444,7 +485,6 @@ class SignalEngine:
                     comments.append(
                         "MACD haussier."
                     )
-
 
                 else:
 
@@ -455,139 +495,112 @@ class SignalEngine:
                     )
 
 
-
-            # -----------------------------
-            # MOYENNES MOBILES
-            # -----------------------------
-
-            close = self._get_indicator(
-                df,
-                [
-                    "Close"
-                ]
-            )
-
-
-            ma_fast = self._get_indicator(
-                df,
-                [
-                    "EMA_12",
-                    "EMA12",
-                    "EMA20",
-                    "SMA_20"
-                ]
-            )
-
-
-            ma_slow = self._get_indicator(
-                df,
-                [
-                    "EMA_26",
-                    "EMA26",
-                    "EMA50",
-                    "SMA_50"
-                ]
-            )
-
-
+            # ==========================
+            # EMA Momentum - 8 points
+            # ==========================
 
             if (
-                close is not None
-                and ma_fast is not None
-                and ma_slow is not None
+                ema12 is not None
+                and ema26 is not None
             ):
 
-
-                if close > ma_fast > ma_slow:
+                if ema12 > ema26:
 
                     score += 8
 
                     comments.append(
-                        "Structure mobile haussière."
+                        "Croisement EMA positif."
                     )
 
-
-                elif close < ma_fast < ma_slow:
+                else:
 
                     score -= 5
 
                     comments.append(
-                        "Structure mobile baissière."
+                        "Croisement EMA négatif."
                     )
 
 
-
-            # -----------------------------
-            # BOLLINGER
-            # -----------------------------
-
-            bb_high = self._get_indicator(
-                df,
-                [
-                    "BB_High",
-                    "BB_Upper"
-                ]
-            )
-
-
-            bb_low = self._get_indicator(
-                df,
-                [
-                    "BB_Low",
-                    "BB_Lower"
-                ]
-            )
-
-
+            # ==========================
+            # Stochastique - 5 points
+            # ==========================
 
             if (
-                close is not None
-                and bb_low is not None
-                and close <= bb_low
+                stoch_k is not None
+                and stoch_d is not None
             ):
 
-                score += 4
+                if stoch_k > stoch_d:
 
-                comments.append(
-                    "Prix proche support Bollinger."
-                )
+                    score += 5
+
+                    comments.append(
+                        "Stochastique haussier."
+                    )
+
+                else:
+
+                    score -= 3
+
+                    comments.append(
+                        "Stochastique baissier."
+                    )
 
 
+            # ==========================
+            # Bollinger - 6 points
+            # ==========================
 
             if (
                 close is not None
                 and bb_high is not None
-                and close >= bb_high
+                and bb_low is not None
             ):
 
-                score -= 2
+                if close <= bb_low:
 
-                comments.append(
-                    "Prix proche résistance Bollinger."
-                )
+                    score += 6
 
+                    comments.append(
+                        "Prix proche support Bollinger."
+                    )
 
+                elif close >= bb_high:
 
-            # -----------------------------
-            # VOLUME
-            # -----------------------------
+                    score -= 3
 
-            volume = self._get_indicator(
-                df,
-                [
-                    "Volume"
-                ]
-            )
+                    comments.append(
+                        "Prix proche résistance Bollinger."
+                    )
 
 
-            if volume is not None and volume > 0:
+            # ==========================
+            # Volume / OBV - 5 points
+            # ==========================
+
+            if volume is not None:
+
+                avg_volume = df["Volume"].rolling(
+                    20
+                ).mean().iloc[-1] if "Volume" in df.columns else None
+
+
+                if avg_volume and volume > avg_volume:
+
+                    score += 3
+
+                    comments.append(
+                        "Volume supérieur à la moyenne."
+                    )
+
+
+            if obv is not None:
 
                 score += 2
 
                 comments.append(
-                    "Volume disponible."
+                    "Flux OBV disponible."
                 )
-
 
 
             score = int(
@@ -599,180 +612,22 @@ class SignalEngine:
             )
 
 
-
-            if not comments:
-
-                comments.append(
-                    "Analyse technique limitée."
-                )
-
-
-
             return (
                 score,
                 " ".join(comments)
             )
 
 
-
         except Exception as e:
 
             logger.error(
-                f"Erreur analyse technique : {e}"
+                f"Erreur analyse technique V2.2 : {e}"
             )
-
 
             return (
-                0,
-                "Analyse technique indisponible."
+                20,
+                "Analyse technique limitée."
             )
-    # =====================================================
-    # ANALYSE IA 30 POINTS
-    # =====================================================
-
-    def analyze_ai(
-        self,
-        ai_prediction=None
-    ) -> Tuple[int, str]:
-
-        try:
-
-            if ai_prediction is None:
-
-                return (
-                    15,
-                    "Aucune prédiction IA disponible."
-                )
-
-
-
-            probability = None
-            direction = None
-
-
-
-            if isinstance(
-                ai_prediction,
-                dict
-            ):
-
-
-                probability = (
-                    ai_prediction.get(
-                        "probability"
-                    )
-                )
-
-
-                direction = (
-                    ai_prediction.get(
-                        "prediction"
-                    )
-                )
-
-
-
-            else:
-
-                probability = float(
-                    ai_prediction
-                )
-
-
-
-            if probability is not None:
-
-
-                probability = float(
-                    probability
-                )
-
-
-
-                # Cas probabilité entre 0 et 1
-
-                if probability >= 0.80:
-
-                    return (
-                        30,
-                        "IA fortement haussière."
-                    )
-
-
-
-                elif probability >= 0.60:
-
-                    return (
-                        24,
-                        "IA légèrement haussière."
-                    )
-
-
-
-                elif probability <= 0.20:
-
-                    return (
-                        30,
-                        "IA fortement baissière."
-                    )
-
-
-
-                elif probability <= 0.40:
-
-                    return (
-                        10,
-                        "IA légèrement baissière."
-                    )
-
-
-
-            if direction:
-
-
-                direction = str(
-                    direction
-                ).upper()
-
-
-
-                if direction == "BUY":
-
-                    return (
-                        25,
-                        "IA signale un achat."
-                    )
-
-
-
-                if direction == "SELL":
-
-                    return (
-                        10,
-                        "IA signale une vente."
-                    )
-
-
-
-            return (
-                15,
-                "IA neutre."
-            )
-
-
-
-        except Exception as e:
-
-            logger.error(
-                f"Erreur IA : {e}"
-            )
-
-
-            return (
-                15,
-                "IA indisponible."
-            )
-
 
 
 
@@ -1171,7 +1026,7 @@ class SignalEngine:
 
 
     # =====================================================
-    # CLASSIFICATION DU SIGNAL
+    # CLASSIFICATION SIGNAL V2.2 PRO
     # =====================================================
 
     def _classify_signal(
@@ -1180,72 +1035,57 @@ class SignalEngine:
     ) -> Tuple[str, str, str]:
 
 
-        if conviction >= 80:
+        if conviction >= 86:
 
             return (
+                "PREMIUM BUY",
+                "🚀",
+                "BUY"
+            )
 
+
+        elif conviction >= 71:
+
+            return (
                 "STRONG BUY",
-
                 "🟢",
-
                 "BUY"
-
             )
 
 
-
-        elif conviction >= 60:
+        elif conviction >= 56:
 
             return (
-
                 "BUY",
-
                 "🔼",
-
                 "BUY"
-
             )
 
 
-
-        elif conviction >= 45:
+        elif conviction >= 41:
 
             return (
-
                 "BUY & SELL",
-
                 "⚖️",
-
                 "NEUTRAL"
-
             )
 
 
-
-        elif conviction >= 30:
+        elif conviction >= 26:
 
             return (
-
                 "SELL",
-
                 "🔽",
-
                 "SELL"
-
             )
-
 
 
         else:
 
             return (
-
                 "STRONG SELL",
-
                 "🔴",
-
                 "SELL"
-
             )
     # =====================================================
     # LECTURE INDICATEURS INTELLIGENTE
