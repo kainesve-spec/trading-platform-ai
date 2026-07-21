@@ -1,16 +1,14 @@
-
 """
-Signal Engine professionnel pour Trading AI Platform V2.
+Moteur professionnel de génération de signaux de trading.
 
-Génération de signaux :
+Signaux générés :
 - STRONG BUY 🟢
 - BUY 🔼
 - BUY & SELL ⚖️
 - SELL 🔽
 - STRONG SELL 🔴
 
-Score de conviction :
-0 - 100
+Score de conviction : 0 - 100
 
 Pondération :
 - Analyse technique : 40 points
@@ -22,8 +20,8 @@ Pondération :
 import logging
 from typing import Dict, Optional, Tuple
 
-import numpy as np
 import pandas as pd
+import numpy as np
 
 
 logger = logging.getLogger(__name__)
@@ -31,398 +29,290 @@ logger = logging.getLogger(__name__)
 
 class SignalEngine:
     """
-    Moteur principal de génération de signaux Trading AI Platform V2.
+    Moteur professionnel de signaux de trading.
+    Compatible crypto, actions et forex.
     """
 
-    def __init__(self):
-        self.last_analysis = {}
+    TECHNICAL_WEIGHT = 40
+    AI_WEIGHT = 30
+    TREND_WEIGHT = 20
+    RISK_WEIGHT = 10
 
-    # ==========================================================
-    # FONCTION PRINCIPALE
-    # ==========================================================
+    def __init__(self):
+        self.logger = logger
 
     def generate_signal(
         self,
         df: pd.DataFrame,
-        ai_prediction: float | None = None
+        ai_prediction: Optional[float] = None
     ) -> Dict:
-        """
-        Génère un signal complet exploitable par monitoring.py.
-        """
 
         try:
             df = self._normalize_dataframe(df)
 
-            if df.empty or "Close" not in df.columns:
+            if df.empty:
                 return self._empty_signal()
 
-            technical = self.analyze_technical(df)
-            ai = self.analyze_ai(ai_prediction)
-            trend = self.analyze_trend(df)
-            risk = self.analyze_risk_reward(df)
+            technical_score, technical_comments = self.analyze_technical(df)
+
+            ai_score, ai_comments = self.analyze_ai(ai_prediction)
+
+            trend_score, trend_comments = self.analyze_trend(df)
+
+            risk_score, risk_data = self.analyze_risk_reward(df)
+
+            conviction = (
+                technical_score
+                + ai_score
+                + trend_score
+                + risk_score
+            )
+
+            conviction = int(np.clip(conviction, 0, 100))
 
             coherence_bonus = self.check_coherence(
-                ai_prediction,
-                trend["score"]
+                technical_score,
+                ai_score,
+                trend_score
             )
 
-            total_score = (
-                technical["score"]
-                + ai["score"]
-                + trend["score"]
-                + risk["score"]
-                + coherence_bonus
+            conviction += coherence_bonus
+            conviction = int(np.clip(conviction, 0, 100))
+
+            signal, emoji, direction = self._classify_signal(conviction)
+
+            entry_price = risk_data["entry_price"]
+            stop_loss = risk_data["stop_loss"]
+            take_profit = risk_data["take_profit"]
+            rr_ratio = risk_data["rr_ratio"]
+
+            analysis = {
+                "technical": technical_comments,
+                "ai": ai_comments,
+                "trend": trend_comments,
+                "risk_reward": risk_data["analysis"]
+            }
+
+            comments = self._generate_comments(
+                signal,
+                conviction,
+                technical_score,
+                ai_score,
+                trend_score,
+                rr_ratio
             )
 
-            total_score = max(0, min(100, total_score))
-
-            signal, emoji, direction = self._classify_signal(
-                total_score
-            )
-
-            entry_price = risk["entry_price"]
-            stop_loss = risk["stop_loss"]
-            take_profit = risk["take_profit"]
-
-            result = {
+            return {
                 "signal": signal,
                 "emoji": emoji,
                 "direction": direction,
-                "conviction": total_score,
+                "conviction": conviction,
 
-                "technical_score": technical["score"],
-                "ai_score": ai["score"],
-                "trend_score": trend["score"],
-                "risk_score": risk["score"],
+                "technical_score": technical_score,
+                "ai_score": ai_score,
+                "trend_score": trend_score,
+                "risk_score": risk_score,
 
                 "entry_price": entry_price,
                 "stop_loss": stop_loss,
                 "take_profit": take_profit,
-                "rr_ratio": risk["rr_ratio"],
+                "rr_ratio": rr_ratio,
 
-                "analysis": {
-                    "technical": technical["comment"],
-                    "ai": ai["comment"],
-                    "trend": trend["comment"],
-                    "risk_reward": risk["comment"]
-                },
-
-                "comments": [
-                    technical["comment"],
-                    ai["comment"],
-                    trend["comment"],
-                    risk["comment"]
-                ]
+                "analysis": analysis,
+                "comments": comments
             }
 
-            self.last_analysis = result
-
-            return result
-
-        except Exception as exc:
+        except Exception as e:
             logger.exception(
-                "Erreur génération signal : %s",
-                exc
+                f"Erreur génération signal : {e}"
             )
             return self._empty_signal()
-
-    # ==========================================================
-    # ANALYSE TECHNIQUE
-    # ==========================================================
 
     def analyze_technical(
         self,
         df: pd.DataFrame
-    ) -> Dict:
+    ) -> Tuple[int, str]:
 
         score = 0
         comments = []
 
         try:
+            last = df.iloc[-1]
 
-            close = df["Close"]
+            rsi = self._get_value(last, "RSI")
+            macd = self._get_value(last, "MACD")
+            macd_signal = self._get_value(last, "MACD_Signal")
 
-            # RSI
-            if "RSI" in df.columns:
-                rsi = float(df["RSI"].iloc[-1])
+            close = self._get_value(last, "Close")
+            ema20 = self._get_value(last, "EMA20")
+            ema50 = self._get_value(last, "EMA50")
 
+            if rsi is not None:
                 if rsi < 30:
                     score += 12
                     comments.append(
-                        "RSI survendu : opportunité acheteuse"
+                        "RSI en zone survendue, potentiel rebond."
                     )
-
                 elif rsi > 70:
-                    score -= 12
+                    score -= 10
                     comments.append(
-                        "RSI suracheté : pression vendeuse"
+                        "RSI en zone de surachat."
                     )
-
                 else:
                     score += 5
 
-            # MACD
-            if "MACD" in df.columns:
-
-                macd = df["MACD"].iloc[-1]
-
-                if macd > 0:
+            if macd is not None and macd_signal is not None:
+                if macd > macd_signal:
                     score += 10
                     comments.append(
-                        "MACD positif"
+                        "MACD positif."
                     )
-
                 else:
-                    score -= 5
+                    score -= 8
                     comments.append(
-                        "MACD négatif"
+                        "MACD baissier."
                     )
 
-            # ADX
-            if "ADX" in df.columns:
-
-                adx = float(df["ADX"].iloc[-1])
-
-                if adx > 25:
-                    score += 8
+            if close and ema20 and ema50:
+                if close > ema20 > ema50:
+                    score += 12
                     comments.append(
-                        "Tendance forte détectée"
+                        "Prix au-dessus des moyennes mobiles."
+                    )
+                elif close < ema20 < ema50:
+                    score -= 10
+                    comments.append(
+                        "Tendance mobile négative."
                     )
 
-            # EMA
-            if "EMA" in df.columns:
+            score = int(
+                np.clip(
+                    score,
+                    0,
+                    self.TECHNICAL_WEIGHT
+                )
+            )
 
-                if close.iloc[-1] > df["EMA"].iloc[-1]:
-                    score += 5
+            return score, " ".join(comments)
 
-            # SMA
-            if "SMA" in df.columns:
-
-                if close.iloc[-1] > df["SMA"].iloc[-1]:
-                    score += 5
-
-
-            score = max(0, min(40, score))
-
-            return {
-                "score": score,
-                "comment": " | ".join(comments)
-                if comments
-                else "Analyse technique neutre"
-            }
-
-        except Exception as exc:
-
-        logger.error(
-            "Erreur analyse tendance V2 : %s",
-            exc
-        )
-
-        return {
-            "score": 0,
-            "comment": "Analyse tendance indisponible"
-        }
-
-    # ==========================================================
-    # ANALYSE IA
-    # ==========================================================
+        except Exception as e:
+            logger.error(
+                f"Erreur analyse technique : {e}"
+            )
+            return 0, "Analyse technique indisponible."
 
     def analyze_ai(
         self,
-        ai_prediction: float | None
-    ) -> Dict:
+        ai_prediction: Optional[float]
+    ) -> Tuple[int, str]:
+
+        if ai_prediction is None:
+            return 15, "Aucune prédiction IA disponible."
 
         try:
+            prediction = float(ai_prediction)
 
-            if ai_prediction is None:
+            if prediction >= 0.75:
+                return 30, "IA fortement haussière."
 
-                return {
-                    "score": 15,
-                    "comment":
-                    "Aucune prédiction IA disponible"
-                }
+            if prediction >= 0.55:
+                return 22, "IA légèrement haussière."
 
-            prediction = max(
-                -1,
-                min(1, float(ai_prediction))
-            )
+            if prediction <= 0.25:
+                return 5, "IA fortement baissière."
 
-            score = int(
-                ((prediction + 1) / 2) * 30
-            )
+            if prediction <= 0.45:
+                return 10, "IA légèrement baissière."
 
-            if prediction > 0.5:
+            return 15, "IA neutre."
 
-                comment = (
-                    "IA fortement haussière"
-                )
-
-            elif prediction < -0.5:
-
-                comment = (
-                    "IA fortement baissière"
-                )
-
-            else:
-
-                comment = (
-                    "IA neutre"
-                )
-
-            return {
-                "score": score,
-                "comment": comment
-            }
-
-        except Exception as exc:
-
+        except Exception as e:
             logger.error(
-                "Erreur analyse IA : %s",
-                exc
+                f"Erreur analyse IA : {e}"
             )
+            return 15, "Analyse IA indisponible."
 
-            return {
-                "score": 15,
-                "comment":
-                "Erreur analyse IA"
-            }
-
-    # ==========================================================
-    # ANALYSE TENDANCE
-    # ==========================================================
-
-      def analyze_trend(
+    def analyze_trend(
         self,
         df: pd.DataFrame
-    ) -> Dict:
+    ) -> Tuple[int, str]:
 
-        score = 0
+        score = 10
         comments = []
 
         try:
+            last = df.iloc[-1]
 
-            if df.empty or "Close" not in df.columns:
-                return {
-                    "score": 0,
-                    "comment": "Données insuffisantes pour analyser la tendance"
-                }
+            close = self._get_value(last, "Close")
+            ema50 = self._get_value(last, "EMA50")
+            ema200 = self._get_value(last, "EMA200")
+            adx = self._get_value(last, "ADX")
 
-            close = float(df["Close"].iloc[-1])
-
-            sma = None
-            ema = None
-
-
-            if "SMA" in df.columns:
-
-                sma = float(df["SMA"].iloc[-1])
-
-                if close > sma:
+            if close and ema50:
+                if close > ema50:
                     score += 5
-                    comments.append("Prix au-dessus de la SMA")
+                    comments.append(
+                        "Tendance court terme positive."
+                    )
                 else:
-                    score -= 2
-                    comments.append("Prix sous la SMA")
+                    score -= 5
+                    comments.append(
+                        "Pression vendeuse court terme."
+                    )
 
-
-            if "EMA" in df.columns:
-
-                ema = float(df["EMA"].iloc[-1])
-
-                if close > ema:
-                    score += 5
-                    comments.append("Prix au-dessus de l'EMA")
-                else:
-                    score -= 2
-                    comments.append("Prix sous l'EMA")
-
-
-            if sma is not None and ema is not None:
-
-                if ema > sma:
+            if close and ema200:
+                if close > ema200:
                     score += 3
-                    comments.append("EMA supérieure à SMA")
-                else:
-                    score -= 1
-                    comments.append("EMA inférieure à SMA")
-
-
-            if "MACD" in df.columns:
-
-                macd = float(df["MACD"].iloc[-1])
-
-                if macd > 0:
-                    score += 4
-                    comments.append("MACD haussier")
+                    comments.append(
+                        "Structure long terme haussière."
+                    )
                 else:
                     score -= 3
-                    comments.append("MACD baissier")
 
+            if adx:
+                if adx > 25:
+                    score += 2
+                    comments.append(
+                        "Tendance confirmée par ADX."
+                    )
 
-            if "ADX" in df.columns:
-
-                adx = float(df["ADX"].iloc[-1])
-
-                if adx >= 25:
-                    score += 3
-                    comments.append("ADX tendance forte")
-
-
-            score = max(0, min(20, score))
-
-
-            if score >= 15:
-                trend_comment = "Tendance fortement haussière"
-
-            elif score >= 10:
-                trend_comment = "Tendance légèrement haussière"
-
-            elif score <= 5:
-                trend_comment = "Tendance baissière ou faible"
-
-            else:
-                trend_comment = "Tendance neutre"
-
-
-            return {
-                "score": score,
-                "comment": trend_comment + " | " + " | ".join(comments)
-            }
-
-
-        except Exception as exc:
-
-            logger.error(
-                "Erreur analyse tendance V2 : %s",
-                exc
+            score = int(
+                np.clip(
+                    score,
+                    0,
+                    self.TREND_WEIGHT
+                )
             )
 
-            return {
-                "score": 0,
-                "comment": "Analyse tendance indisponible"
-            
-    # ==========================================================
-    # RISK REWARD
-    # ==========================================================
+            return score, " ".join(comments)
+
+        except Exception as e:
+            logger.error(
+                f"Erreur analyse tendance : {e}"
+            )
+            return 10, "Analyse tendance indisponible."
 
     def analyze_risk_reward(
         self,
         df: pd.DataFrame
-    ) -> Dict:
+    ) -> Tuple[int, Dict]:
 
         try:
+            close = float(df["Close"].iloc[-1])
 
-            entry = float(
-                df["Close"].iloc[-1]
-            )
+            atr = None
 
-            stop_loss = entry * 0.98
+            if "ATR" in df.columns:
+                atr = float(df["ATR"].iloc[-1])
 
-            take_profit = entry * 1.04
+            if not atr or np.isnan(atr):
+                atr = close * 0.02
 
-            risk = entry - stop_loss
+            stop_loss = close - atr
+            take_profit = close + (atr * 2)
 
-            reward = take_profit - entry
+            risk = abs(close - stop_loss)
+            reward = abs(take_profit - close)
 
             rr_ratio = (
                 reward / risk
@@ -430,114 +320,66 @@ class SignalEngine:
                 else 0
             )
 
-            score = 10 if rr_ratio >= 2 else 5
+            if rr_ratio >= 2:
+                score = 10
+            elif rr_ratio >= 1.5:
+                score = 7
+            elif rr_ratio >= 1:
+                score = 5
+            else:
+                score = 2
 
-            return {
-
-                "score": score,
-
-                "entry_price": round(
-                    entry,
-                    6
-                ),
-
-                "stop_loss": round(
-                    stop_loss,
-                    6
-                ),
-
-                "take_profit": round(
-                    take_profit,
-                    6
-                ),
-
-                "rr_ratio": round(
-                    rr_ratio,
-                    2
-                ),
-
-                "comment":
-                f"Ratio risque/rendement {rr_ratio:.2f}"
-
+            return score, {
+                "entry_price": round(close, 4),
+                "stop_loss": round(stop_loss, 4),
+                "take_profit": round(take_profit, 4),
+                "rr_ratio": round(rr_ratio, 2),
+                "analysis": (
+                    f"Ratio risque rendement : {round(rr_ratio,2)}"
+                )
             }
 
-
-        except Exception as exc:
-
+        except Exception as e:
             logger.error(
-                "Erreur Risk Reward : %s",
-                exc
+                f"Erreur Risk Reward : {e}"
             )
 
-            return {
-
-                "score": 0,
-
+            return 0, {
                 "entry_price": 0,
-
                 "stop_loss": 0,
-
                 "take_profit": 0,
-
                 "rr_ratio": 0,
-
-                "comment":
-                "Risk Reward indisponible"
-
+                "analysis": "Risk Reward indisponible."
             }
-
-    # ==========================================================
-    # COHERENCE IA / TENDANCE
-    # ==========================================================
 
     def check_coherence(
         self,
-        ai_prediction: Optional[float],
+        technical_score: int,
+        ai_score: int,
         trend_score: int
     ) -> int:
 
         try:
-
-            if ai_prediction is None:
-                return 0
-
-
-            if ai_prediction > 0 and trend_score >= 10:
-
-                return 10
-
-
-            if ai_prediction < 0 and trend_score <= 5:
-
-                return 10
-
+            bonus = 0
 
             if (
-                ai_prediction > 0
-                and trend_score <= 5
+                technical_score > 25
+                and ai_score > 20
+                and trend_score > 12
             ):
+                bonus = 5
 
-                return -10
-
-
-            if (
-                ai_prediction < 0
-                and trend_score >= 10
+            elif (
+                technical_score < 10
+                and ai_score < 10
+                and trend_score < 8
             ):
+                bonus = -5
 
-                return -10
-
-
-            return 0
-
+            return bonus
 
         except Exception:
-
             return 0
-
-    # ==========================================================
-    # CLASSIFICATION SIGNAL
-    # ==========================================================
 
     def _classify_signal(
         self,
@@ -545,86 +387,18 @@ class SignalEngine:
     ) -> Tuple[str, str, str]:
 
         if conviction >= 80:
-
-            return (
-                "STRONG BUY",
-                "🟢",
-                "BUY"
-            )
+            return "STRONG BUY", "🟢", "BUY"
 
         if conviction >= 60:
+            return "BUY", "🔼", "BUY"
 
-            return (
-                "BUY",
-                "🔼",
-                "BUY"
-            )
+        if conviction >= 45:
+            return "BUY & SELL", "⚖️", "NEUTRAL"
 
-        if conviction >= 40:
+        if conviction >= 25:
+            return "SELL", "🔽", "SELL"
 
-            return (
-                "BUY & SELL",
-                "⚖️",
-                "NEUTRAL"
-            )
-
-        if conviction >= 20:
-
-            return (
-                "SELL",
-                "🔽",
-                "SELL"
-            )
-
-        return (
-            "STRONG SELL",
-            "🔴",
-            "SELL"
-        )
-
-    # ==========================================================
-    # SIGNAL VIDE
-    # ==========================================================
-
-    def _empty_signal(self) -> Dict:
-
-        return {
-
-            "signal": "BUY & SELL",
-
-            "emoji": "⚖️",
-
-            "direction": "NEUTRAL",
-
-            "conviction": 0,
-
-            "technical_score": 0,
-
-            "ai_score": 0,
-
-            "trend_score": 0,
-
-            "risk_score": 0,
-
-            "entry_price": 0,
-
-            "stop_loss": 0,
-
-            "take_profit": 0,
-
-            "rr_ratio": 0,
-
-            "analysis": {},
-
-            "comments": [
-                "Données insuffisantes pour générer un signal"
-            ]
-
-        }
-
-    # ==========================================================
-    # NORMALISATION DATAFRAME
-    # ==========================================================
+        return "STRONG SELL", "🔴", "SELL"
 
     def _normalize_dataframe(
         self,
@@ -632,38 +406,86 @@ class SignalEngine:
     ) -> pd.DataFrame:
 
         try:
-
             if df is None:
+                return pd.DataFrame()
+
+            if not isinstance(df, pd.DataFrame):
                 return pd.DataFrame()
 
             df = df.copy()
 
-            mapping = {
+            df.columns = [
+                str(col).strip()
+                for col in df.columns
+            ]
 
-                "open": "Open",
-                "high": "High",
-                "low": "Low",
-                "close": "Close"
-
-            }
-
-            df.rename(
-                columns={
-                    k: v
-                    for k, v in mapping.items()
-                    if k in df.columns
-                },
-                inplace=True
+            return df.dropna(
+                how="all"
             )
 
-            return df
-
-
-        except Exception as exc:
-
+        except Exception as e:
             logger.error(
-                "Erreur normalisation dataframe : %s",
-                exc
+                f"Erreur normalisation dataframe : {e}"
             )
-
             return pd.DataFrame()
+
+    def _empty_signal(self) -> Dict:
+
+        return {
+            "signal": "BUY & SELL",
+            "emoji": "⚖️",
+            "direction": "NEUTRAL",
+            "conviction": 0,
+
+            "technical_score": 0,
+            "ai_score": 0,
+            "trend_score": 0,
+            "risk_score": 0,
+
+            "entry_price": 0,
+            "stop_loss": 0,
+            "take_profit": 0,
+            "rr_ratio": 0,
+
+            "analysis": {},
+            "comments": "Données insuffisantes."
+        }
+
+    def _get_value(
+        self,
+        row,
+        column
+    ):
+
+        try:
+            if column not in row.index:
+                return None
+
+            value = row[column]
+
+            if pd.isna(value):
+                return None
+
+            return float(value)
+
+        except Exception:
+            return None
+
+    def _generate_comments(
+        self,
+        signal,
+        conviction,
+        technical,
+        ai,
+        trend,
+        rr
+    ) -> str:
+
+        return (
+            f"Signal {signal} avec une conviction de "
+            f"{conviction}/100. "
+            f"Technique: {technical}/40, "
+            f"IA: {ai}/30, "
+            f"Tendance: {trend}/20, "
+            f"Risk Reward: {rr}."
+        
