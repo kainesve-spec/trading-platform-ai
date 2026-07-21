@@ -471,7 +471,7 @@ class SignalEngine:
         except Exception:
             return None
 
-    def _generate_comments(
+     def _generate_comments(
         self,
         signal,
         conviction,
@@ -488,4 +488,5 @@ class SignalEngine:
             f"IA: {ai}/30, "
             f"Tendance: {trend}/20, "
             f"Risk Reward: {rr}."
+        )
         
