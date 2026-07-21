@@ -718,23 +718,37 @@ class SignalEngine:
     # =====================================================
 
     def _normalize_dataframe(
-        self,
-        df: pd.DataFrame
-    ) -> pd.DataFrame:
+    self,
+    df: pd.DataFrame
+) -> pd.DataFrame:
 
-        try:
+    try:
 
-            if df is None:
+        if df is None or df.empty:
+            return pd.DataFrame()
 
-                return pd.DataFrame()
+        df = df.copy()
 
+        # Renommer automatiquement les colonnes
+        rename_map = {
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "volume": "Volume",
+        }
 
-            if not isinstance(
-                df,
-                pd.DataFrame
-            ):
+        df.rename(columns=rename_map, inplace=True)
 
-                return pd.DataFrame()
+        return df
+
+    except Exception as e:
+
+        logger.error(
+            f"Erreur normalisation DF : {e}"
+        )
+
+        return pd.DataFrame()
 
 
 
