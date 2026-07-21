@@ -519,9 +519,7 @@ class SignalEngine:
 
             atr = None
 
-
             atr_columns = [
-    atr_columns = [
                 "ATR",
                 "atr",
                 "Average_True_Range"
