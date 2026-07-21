@@ -75,7 +75,7 @@ class SignalEngine:
             return SignalEngine._empty_signal()
 
 
-         try:
+          try:
 
             technical = SignalEngine.analyze_technical(df)
 
@@ -87,7 +87,6 @@ class SignalEngine:
 
             risk = SignalEngine.analyze_risk_reward(df)
 
-
             total_score = (
                 technical["score"]
                 + ai["score"]
@@ -95,22 +94,16 @@ class SignalEngine:
                 + risk["score"]
             )
 
-
             coherence_bonus = SignalEngine.check_coherence(
                 ai,
                 trend
             )
 
-
             total_score += coherence_bonus
-
 
             conviction = int(
                 np.clip(total_score, 0, 100)
             )
-            )
-
-
 
             signal = SignalEngine._classify_signal(
                 conviction,
@@ -119,14 +112,11 @@ class SignalEngine:
                 trend
             )
 
-
             last_price = float(
                 df["Close"].iloc[-1]
             )
 
-
             return {
-
                 "signal": signal["name"],
                 "emoji": signal["emoji"],
                 "direction": signal["direction"],
@@ -149,16 +139,14 @@ class SignalEngine:
                     "risk": risk["comment"]
                 },
 
-               
-                  "comments": [
-                      technical["comment"],
-                      ai["comment"],
-                      trend["comment"],
-                      risk["comment"],
-                      f"Cohérence IA/Tendance : {coherence_bonus:+d}"
-]
-
-                  }
+                "comments": [
+                    technical["comment"],
+                    ai["comment"],
+                    trend["comment"],
+                    risk["comment"],
+                    f"Cohérence IA/Tendance : {coherence_bonus:+d}"
+                ]
+            }
 
 
 
